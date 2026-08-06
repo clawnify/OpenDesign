@@ -2,6 +2,8 @@
 
 # OpenClaw Design App: The Open-Source Canva Alternative for SaaS
 
+[![Deploy with Clawnify](https://app.clawnify.com/deploy-button.svg)](https://app.clawnify.com/deploy?repo=clawnify/open-design)
+
 A design editor for creating professional social media graphics — LinkedIn posts, quote cards, announcements, and more. Part of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem. Zero cloud dependencies — runs locally with SQLite.
 
 Built with **Preact + Fabric.js + Tailwind CSS + Hono + SQLite**. Ships with a Figma-inspired dark editor UI, retina canvas rendering, and pre-built LinkedIn post templates.
