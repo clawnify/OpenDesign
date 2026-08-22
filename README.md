@@ -2,7 +2,7 @@
 
 # OpenDesign: The Open-Source Canva Alternative for SaaS
 
-[![Deploy with Clawnify](https://app.clawnify.com/deploy-button.svg)](https://app.clawnify.com/deploy?repo=clawnify/open-design)
+[![Deploy with Clawnify](https://app.clawnify.com/deploy-button.svg)](https://app.clawnify.com/deploy?repo=clawnify/OpenDesign)
 
 A design editor for creating professional social media graphics — LinkedIn posts, quote cards, announcements, and more. Part of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem. Zero cloud dependencies — runs locally with SQLite.
 
@@ -32,7 +32,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 ## Quickstart
 
 ```bash
-git clone https://github.com/clawnify/open-design.git
+git clone https://github.com/clawnify/OpenDesign.git
 cd open-design
 pnpm install
 pnpm run dev
