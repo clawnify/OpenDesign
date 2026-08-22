@@ -1,6 +1,6 @@
-<img src="readme-banner.png" alt="Open Design preview" width="100%" />
+<img src="readme-banner.png" alt="OpenDesign preview" width="100%" />
 
-# OpenClaw Design App: The Open-Source Canva Alternative for SaaS
+# OpenDesign: The Open-Source Canva Alternative for SaaS
 
 [![Deploy with Clawnify](https://app.clawnify.com/deploy-button.svg)](https://app.clawnify.com/deploy?repo=clawnify/open-design)
 
@@ -10,7 +10,7 @@ Built with **Preact + Fabric.js + Tailwind CSS + Hono + SQLite**. Ships with a F
 
 ## What Is It?
 
-OpenClaw Design App is a production-ready graphic design editor designed for the OpenClaw community. Think of it as an open-source Canva alternative — a visual design tool you can self-host, customize, and embed in any SaaS product.
+OpenDesign is a production-ready graphic design editor designed for the OpenClaw community. Think of it as an open-source Canva alternative — a visual design tool you can self-host, customize, and embed in any SaaS product.
 
 Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No subscriptions, no watermarks, no vendor lock-in. Create pixel-perfect social media graphics with professional typography and export at 2x resolution.
 

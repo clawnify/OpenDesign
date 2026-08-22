@@ -1,4 +1,4 @@
-# Canva App
+# OpenDesign
 
 A design editor for creating professional social media graphics, especially LinkedIn posts.
 
