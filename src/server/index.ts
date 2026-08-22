@@ -4,7 +4,7 @@ import { putUpload, getUpload } from "./uploads.js";
 
 type Env = { Bindings: { DB: D1Database } };
 
-const app = createApp<Env>({ title: "Design App API", version: "1.0.0" });
+const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
 
 // ── Schemas ──────────────────────────────────────────────────────────
 
