@@ -2,7 +2,7 @@
   "$schema": "https://app.clawnify.com/schema/v1/clawnify.json",
   "version": 1,
   "name": "OpenDesign",
-  "description": "Design editor for creating professional social media graphics, LinkedIn posts, and visual content with a canvas-based UI, templates, multi-page support, image uploads, and text/shape tools. Like Canva. Best for graphic design tools, social media post creators, banner makers, or any visual content editor.",
+  "description": "Design editor for creating professional social media graphics, LinkedIn posts, and visual content with a canvas-based UI, templates, multi-page support, image uploads, and text/shape tools. Named template fields let designs be filled from data or an agent over the API, so one design can produce on-brand variants. Like Canva. Best for graphic design tools, social media post creators, banner makers, or any visual content editor.",
   "icon": "icon.svg",
   "screenshot": "https://github.com/user-attachments/assets/55fcc0aa-4606-4f80-b56a-7734d7673914",
   "tags": ["design", "graphics", "social-media", "canvas"],

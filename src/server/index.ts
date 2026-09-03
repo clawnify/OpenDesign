@@ -1,6 +1,7 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
 import { putUpload, getUpload } from "./uploads.js";
+import { collectFields, fillPages } from "./fields.js";
 
 type Env = { Bindings: { DB: D1Database } };
 
@@ -175,6 +176,148 @@ app.openapi(deleteDesign, async (c) => {
   const { id } = c.req.valid("param");
   await run("DELETE FROM designs WHERE id = ?", [id]);
   return c.json({ ok: true }, 200);
+});
+
+// ── Template fields ─────────────────────────────────────────────────
+//
+// A design becomes a template the moment any object carries a `fieldName`.
+// `/fields` publishes the schema so a caller knows what it can fill; `/fill`
+// substitutes values without touching the stored design, or writes the result
+// as a new design when `save` is set. Together they cover "generate N variants
+// from a row of data" without the caller ever parsing canvas JSON.
+
+const FieldSchema = z.object({
+  name: z.string(),
+  type: z.enum(["text", "image"]),
+  value: z.string(),
+  page_ids: z.array(z.string()),
+});
+
+const listFields = createRoute({
+  method: "get",
+  path: "/api/designs/{id}/fields",
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { content: { "application/json": { schema: z.array(FieldSchema) } }, description: "OK" },
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+app.openapi(listFields, async (c) => {
+  const { id } = c.req.valid("param");
+  const design = await get<{ id: string }>("SELECT id FROM designs WHERE id = ?", [id]);
+  if (!design) return c.json({ error: "Not found" }, 404);
+  const pages = await query<z.infer<typeof PageSchema>>(
+    "SELECT * FROM pages WHERE design_id = ? ORDER BY sort_order",
+    [id]
+  );
+  return c.json(collectFields(pages), 200);
+});
+
+// ── Fill a design ───────────────────────────────────────────────────
+
+const FilledPageSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  sort_order: z.number(),
+  canvas_json: z.string(),
+});
+
+const FillResponseSchema = z.object({
+  design: DesignSchema,
+  pages: z.array(FilledPageSchema),
+  filled: z.array(z.string()),
+  unmatched: z.array(z.string()),
+});
+
+const fillDesign = createRoute({
+  method: "post",
+  path: "/api/designs/{id}/fill",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            values: z.record(z.union([z.string(), z.number()])),
+            // Persist the result as a new design instead of only returning it.
+            save: z.boolean().optional(),
+            name: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { content: { "application/json": { schema: FillResponseSchema } }, description: "OK" },
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+app.openapi(fillDesign, async (c) => {
+  const { id } = c.req.valid("param");
+  const { values, save, name } = c.req.valid("json");
+
+  const design = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [id]);
+  if (!design) return c.json({ error: "Not found" }, 404);
+
+  const pages = await query<z.infer<typeof PageSchema>>(
+    "SELECT * FROM pages WHERE design_id = ? ORDER BY sort_order",
+    [id]
+  );
+
+  // Numbers are the common case for stat cards, so accept them and stringify
+  // rather than making every caller do it.
+  const strings = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)]));
+  const { pages: filledPages, filled, unmatched } = fillPages(pages, strings);
+
+  const body = filledPages.map((p) => ({
+    id: p.id,
+    title: p.title,
+    sort_order: p.sort_order,
+    canvas_json: p.canvas_json,
+  }));
+
+  if (!save) return c.json({ design, pages: body, filled, unmatched }, 200);
+
+  // Ids are generated here rather than by the column default so the new rows
+  // can be linked without a racy "most recently created" lookup.
+  const newDesignId = crypto.randomUUID();
+  await run(
+    "INSERT INTO designs (id, name, canvas_json, width, height) VALUES (?, ?, ?, ?, ?)",
+    [
+      newDesignId,
+      name || `${design.name} (filled)`,
+      // designs.canvas_json mirrors page 1, matching what the editor writes.
+      filledPages[0]?.canvas_json ?? design.canvas_json,
+      design.width,
+      design.height,
+    ]
+  );
+
+  const createdPages = filledPages.map((p) => ({ ...p, id: crypto.randomUUID() }));
+  for (const p of createdPages) {
+    await run(
+      "INSERT INTO pages (id, design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?, ?)",
+      [p.id, newDesignId, p.title, p.canvas_json, p.sort_order]
+    );
+  }
+
+  const created = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [newDesignId]);
+  return c.json(
+    {
+      design: created!,
+      pages: createdPages.map((p) => ({
+        id: p.id,
+        title: p.title,
+        sort_order: p.sort_order,
+        canvas_json: p.canvas_json,
+      })),
+      filled,
+      unmatched,
+    },
+    200
+  );
 });
 
 // ── Add page ───────────────────────────────────────────────────────

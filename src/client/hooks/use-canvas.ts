@@ -276,6 +276,14 @@ export function useCanvasState() {
 
   // ── Object manipulation ─────────────────────────────────────────────
 
+  // Editing a property mutates the live Fabric object, which React can't see.
+  // This counter is what re-renders the sidebar. Spreading the object into a
+  // new one would also re-render, but it strips the prototype — and in Fabric
+  // v6 that takes `.set()` and the `type` getter with it, so the panel would
+  // mistake a textbox for a shape and the next edit would throw.
+  const [, setSelectionVersion] = useState(0);
+  const bumpSelection = () => setSelectionVersion((v) => v + 1);
+
   const updateSelectedObject = useCallback(
     (props: Record<string, unknown>) => {
       const canvas = getActiveCanvas();
@@ -284,7 +292,7 @@ export function useCanvasState() {
       selectedObject.set(props as Partial<fabric.FabricObject>);
       canvas.requestRenderAll();
       saveHistory(pageId);
-      setSelectedObject({ ...selectedObject } as fabric.FabricObject);
+      bumpSelection();
     },
     [getActiveCanvas, selectedObject, saveHistory]
   );

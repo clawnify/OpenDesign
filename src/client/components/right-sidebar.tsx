@@ -27,6 +27,53 @@ const FONT_FAMILIES = [
   "Merriweather",
 ];
 
+/**
+ * Names an object so `/api/designs/:id/fields` publishes it and
+ * `/api/designs/:id/fill` can write to it. Committed on blur rather than per
+ * keystroke, so naming a field costs one undo step instead of one per letter.
+ */
+function FieldNameInput({
+  object,
+  onCommit,
+}: {
+  object: fabric.FabricObject;
+  onCommit: (name: string) => void;
+}) {
+  const saved = ((object as any).fieldName as string) || "";
+  const [draft, setDraft] = useState(saved);
+
+  // Re-seed when the selection moves to a different object.
+  useEffect(() => setDraft(saved), [object]);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (next !== saved) onCommit(next);
+    setDraft(next);
+  };
+
+  return (
+    <div>
+      <label class="text-[11px] text-zinc-400 mb-1 block">Field name</label>
+      <input
+        type="text"
+        placeholder="e.g. headline"
+        class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent font-mono"
+        value={draft}
+        onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+      />
+      <p class="text-[10px] text-zinc-400 mt-1 leading-snug">
+        {saved
+          ? "Fillable through the design's /fill endpoint."
+          : "Name it to fill it from data or an agent."}
+      </p>
+    </div>
+  );
+}
+
 export function RightSidebar() {
   const { selectedObject, updateSelectedObject, deleteSelected, canvas, setBackground, canvasWidth, canvasHeight } =
     useEditor();
@@ -89,6 +136,14 @@ export function RightSidebar() {
       </div>
 
       <div class="p-4 flex flex-col gap-4">
+        {/* ── Template field ────────────────────────────────────────── */}
+        {(isText || isImage) && (
+          <FieldNameInput
+            object={selectedObject}
+            onCommit={(fieldName) => updateSelectedObject({ fieldName })}
+          />
+        )}
+
         {/* ── Text properties ───────────────────────────────────────── */}
         {isText && (
           <>

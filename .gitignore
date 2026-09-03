@@ -5,3 +5,4 @@ data.db-wal
 data.db-shm
 uploads/
 .env
+.test-build/

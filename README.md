@@ -16,6 +16,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 ## Features
 
+- **Template fields** — name any text or image object, then fill it from data or an agent over the API; one name can drive several objects and pages at once
 - **Fabric.js canvas** — full object manipulation with retina/HiDPI rendering (2x device pixel ratio)
 - **Pre-built templates** — LinkedIn-optimized: Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text
 - **10 Google Fonts** — Inter, Playfair Display, Montserrat, Poppins, Roboto, Open Sans, Lora, Raleway, Source Sans Pro, Merriweather
@@ -98,7 +99,8 @@ src/
   server/
     schema.sql  — SQLite schema (designs, templates) + template seeds
     db.ts       — SQLite wrapper (query, get, run, transaction)
-    index.ts    — Hono REST API (designs CRUD, templates, uploads)
+    index.ts    — Hono REST API (designs CRUD, templates, fields, uploads)
+    fields.ts   — Template fields: read the fill schema, substitute values
     uploads.ts  — Local file upload management
     dev.ts      — Dev server with static file serving
   client/
@@ -133,10 +135,76 @@ templates (id, name, category, canvas_json, width, height, thumbnail_url, sort_o
 | GET | `/api/designs/:id` | Get a design |
 | PUT | `/api/designs/:id` | Update a design |
 | DELETE | `/api/designs/:id` | Delete a design |
+| GET | `/api/designs/:id/fields` | List the design's fillable fields |
+| POST | `/api/designs/:id/fill` | Fill those fields with values |
 | GET | `/api/templates` | List all templates |
 | GET | `/api/templates/:id` | Get a template |
 | POST | `/api/uploads` | Upload an image file |
 | GET | `/api/uploads/:filename` | Serve an uploaded image |
+
+## Template Fields
+
+Design something once, then produce as many variants of it as you have rows of
+data — without anything on the outside having to understand canvas JSON.
+
+Select a text or image object in the editor and give it a **Field name** in the
+properties panel. That object is now a fill slot:
+
+```bash
+curl localhost:8787/api/designs/$ID/fields
+```
+
+```json
+[
+  { "name": "headline", "type": "text",  "value": "Your inspiring quote goes here", "page_ids": ["p1"] },
+  { "name": "logo",     "type": "image", "value": "https://.../old.png",            "page_ids": ["p1", "p2"] }
+]
+```
+
+Fill it. Text fields take a string (numbers are accepted and stringified),
+image fields take a URL:
+
+```bash
+curl -X POST localhost:8787/api/designs/$ID/fill \
+  -H 'content-type: application/json' \
+  -d '{"values": {"headline": "Q3 revenue up 40%", "logo": "https://.../new.png"}}'
+```
+
+The response carries the filled pages plus `filled` and `unmatched`, so a name
+that matches nothing is reported rather than failing the request. The stored
+design is left alone — add `"save": true` (and optionally `"name"`) to persist
+the result as a new design instead.
+
+### How far this scales today
+
+`save: true` writes a **new editable design**, not a rendered image, because
+there is no server-side rasterizer. That makes it the right tool for a handful
+of variants — an agent fills a card, opens it, exports it — and the wrong one
+for a spreadsheet:
+
+- Each saved variant is a row in `designs`, and `GET /api/designs` returns every
+  row with its full `canvas_json` and no pagination. A three-object card is
+  ~2.5 KB serialised; a branded design with an image is 10-40 KB. A few hundred
+  variants turn the gallery response into megabytes.
+- So a few hundred saved variants give you a few hundred gallery entries, not a
+  few hundred finished graphics.
+
+For real bulk output, drive `fill` without `save` and rasterize in the browser —
+the canvas is already there, and that loop is the missing piece rather than a
+server-side renderer. Until it exists, treat `save: true` as a small-N
+convenience.
+
+Worth knowing:
+
+- A field name may repeat. One `logo` across five pages fills all five, which is
+  what you want for a carousel.
+- What gets written depends on the object, not the declared type: text objects
+  take `text`, image objects take `src`.
+- A replacement image keeps the original object's box, so a different aspect
+  ratio will be stretched. Size the slot for the images you intend to feed it.
+- Only text and image objects can be fields. Naming a shape does nothing.
+- Rendering to PNG still happens in the browser — there is no server-side
+  rasterizer, because Workers have no canvas.
 
 ## Community & Contributions
 
