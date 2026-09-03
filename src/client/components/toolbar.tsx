@@ -9,6 +9,9 @@ import {
   Save,
   ChevronDown,
   Home,
+  FileText,
+  Image as ImageIcon,
+  Images,
 } from "lucide-preact";
 import { useEditor, CANVAS_SIZES } from "../context";
 
@@ -27,6 +30,10 @@ export function Toolbar() {
     zoomIn,
     zoomOut,
     exportPNG,
+    exportAllPNG,
+    exportPDF,
+    exporting,
+    pages,
     saveDesign,
     saving,
     activeDesign,
@@ -35,6 +42,7 @@ export function Toolbar() {
   } = useEditor();
 
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
 
@@ -54,6 +62,14 @@ export function Toolbar() {
       renameDesign(activeDesign.id, nameValue.trim());
     }
     setEditingName(false);
+  };
+
+  const designName = activeDesign?.name ?? "design";
+  const pageIds = pages.map((p) => p.id);
+
+  const runExport = (fn: () => void) => {
+    setShowExportMenu(false);
+    fn();
   };
 
   return (
@@ -176,14 +192,59 @@ export function Toolbar() {
 
         <div class="w-px h-5 bg-zinc-300 mx-1" />
 
-        <button
-          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 cursor-pointer transition-all bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-          onClick={exportPNG}
-          title="Export as PNG"
-        >
-          <Download size={13} />
-          Export
-        </button>
+        <div class="relative">
+          <button
+            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 cursor-pointer transition-all bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            disabled={exporting || !activeDesign}
+            title="Export this design"
+          >
+            {exporting ? <span class="spinner" /> : <Download size={13} />}
+            {exporting ? "Preparing..." : "Export"}
+            <ChevronDown size={12} />
+          </button>
+          {showExportMenu && (
+            <>
+              <div class="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
+              <div class="absolute top-full right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-xl z-20 min-w-[230px] py-1">
+                <button
+                  class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                  onClick={() => runExport(() => exportPDF(pageIds, designName))}
+                >
+                  <FileText size={14} class="mt-0.5 shrink-0 text-accent" />
+                  <span>
+                    <span class="block font-medium text-zinc-900">Carousel PDF</span>
+                    <span class="block text-[10px] text-zinc-400">
+                      All {pages.length} {pages.length === 1 ? "page" : "pages"} — ready for LinkedIn
+                    </span>
+                  </span>
+                </button>
+                <button
+                  class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                  onClick={() => runExport(() => exportPNG(designName))}
+                >
+                  <ImageIcon size={14} class="mt-0.5 shrink-0 text-zinc-400" />
+                  <span>
+                    <span class="block font-medium text-zinc-900">This page</span>
+                    <span class="block text-[10px] text-zinc-400">PNG at 2x</span>
+                  </span>
+                </button>
+                {pages.length > 1 && (
+                  <button
+                    class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                    onClick={() => runExport(() => exportAllPNG(pageIds, designName))}
+                  >
+                    <Images size={14} class="mt-0.5 shrink-0 text-zinc-400" />
+                    <span>
+                      <span class="block font-medium text-zinc-900">All pages</span>
+                      <span class="block text-[10px] text-zinc-400">{pages.length} separate PNGs at 2x</span>
+                    </span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
         <button
           class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer transition-all bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
           onClick={saveDesign}

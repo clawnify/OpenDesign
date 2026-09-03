@@ -11,6 +11,8 @@ export interface CanvasSize {
 
 export const CANVAS_SIZES: CanvasSize[] = [
   { label: "LinkedIn Square", width: 1080, height: 1080 },
+  // LinkedIn's recommended carousel slide — 4:5 fills the most phone screen.
+  { label: "LinkedIn Carousel", width: 1080, height: 1350 },
   { label: "LinkedIn Landscape", width: 1200, height: 627 },
   { label: "LinkedIn Portrait", width: 1200, height: 1500 },
   { label: "Instagram Story", width: 1080, height: 1920 },
@@ -46,7 +48,10 @@ export interface EditorContextValue {
   zoomToFit: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
-  exportPNG: () => void;
+  exportPNG: (designName: string) => void;
+  exportAllPNG: (pageIds: string[], designName: string) => void;
+  exportPDF: (pageIds: string[], designName: string) => Promise<void>;
+  exporting: boolean;
   getCanvasJSON: () => string;
   getCanvasJSONForPage: (pageId: string) => string;
   loadTemplate: (template: Template) => void;

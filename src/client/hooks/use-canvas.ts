@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import * as fabric from "fabric";
 import type { Template } from "../types";
+import { downloadDataURL, exportPagesToPDF, renderPageToPNG, slugify } from "../lib/export";
 
 const MAX_HISTORY = 50;
 
@@ -32,6 +33,7 @@ export function useCanvasState() {
   const [canvasHeight, setCanvasHeight] = useState(1080);
   const [zoom, setZoom] = useState(0.58);
   const [fitScale, setFitScale] = useState(0.58);
+  const [exporting, setExporting] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const isRestoringRef = useRef<Set<string>>(new Set());
@@ -370,29 +372,51 @@ export function useCanvasState() {
 
   // ── Export ──────────────────────────────────────────────────────────
 
-  const exportPNG = useCallback(() => {
-    const canvas = getActiveCanvas();
-    if (!canvas) return;
-    const activeObj = canvas.getActiveObject();
-    canvas.discardActiveObject();
-    canvas.requestRenderAll();
+  // Page ids come from the design, which owns their order — a Map has none.
+  const canvasesForPages = useCallback(
+    (pageIds: string[]) =>
+      pageIds
+        .map((id) => canvasMapRef.current.get(id))
+        .filter((c): c is fabric.Canvas => Boolean(c)),
+    []
+  );
 
-    const dataURL = canvas.toDataURL({
-      format: "png",
-      multiplier: 2,
-      quality: 1,
-    });
+  const exportPNG = useCallback(
+    (designName: string) => {
+      const canvas = getActiveCanvas();
+      if (!canvas) return;
+      downloadDataURL(renderPageToPNG(canvas), `${slugify(designName)}.png`);
+    },
+    [getActiveCanvas]
+  );
 
-    const link = document.createElement("a");
-    link.download = "design.png";
-    link.href = dataURL;
-    link.click();
+  const exportAllPNG = useCallback(
+    (pageIds: string[], designName: string) => {
+      const canvases = canvasesForPages(pageIds);
+      const slug = slugify(designName);
+      canvases.forEach((canvas, i) => {
+        // Browsers drop downloads fired in the same tick, so space them out.
+        setTimeout(() => downloadDataURL(renderPageToPNG(canvas), `${slug}-${i + 1}.png`), i * 250);
+      });
+    },
+    [canvasesForPages]
+  );
 
-    if (activeObj) {
-      canvas.setActiveObject(activeObj);
-      canvas.requestRenderAll();
-    }
-  }, [getActiveCanvas]);
+  const exportPDF = useCallback(
+    async (pageIds: string[], designName: string) => {
+      const canvases = canvasesForPages(pageIds);
+      if (canvases.length === 0) return;
+      setExporting(true);
+      try {
+        await exportPagesToPDF(canvases, canvasWidth, canvasHeight, `${slugify(designName)}.pdf`);
+      } catch (e) {
+        console.error("Failed to export PDF:", e);
+      } finally {
+        setExporting(false);
+      }
+    },
+    [canvasesForPages, canvasWidth, canvasHeight]
+  );
 
   // ── Serialization ───────────────────────────────────────────────────
 
@@ -501,6 +525,9 @@ export function useCanvasState() {
     zoomIn,
     zoomOut,
     exportPNG,
+    exportAllPNG,
+    exportPDF,
+    exporting,
     getCanvasJSON,
     getCanvasJSONForPage,
     loadTemplate,

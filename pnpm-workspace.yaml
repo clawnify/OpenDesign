@@ -1,3 +1,11 @@
+# jsPDF's optional extras (.svg()/.html() support) are unused here, and canvg
+# drags in node-canvas — a native build that would make `pnpm install` need
+# cairo on every machine that clones this template.
+ignoredOptionalDependencies:
+  - canvg
+  - core-js
+  - dompurify
+  - html2canvas
 allowBuilds:
   canvas: set this to true or false
   esbuild: set this to true or false

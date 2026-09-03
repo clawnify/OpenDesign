@@ -23,11 +23,23 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
 - **Image uploads** — drag-and-drop or click to upload, place on canvas
 - **Backgrounds** — solid colors, gradients, uploaded images
-- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
+- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Carousel (1080x1350), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
 - **Undo/Redo** — full history with keyboard shortcuts (Cmd+Z / Cmd+Shift+Z)
-- **2x PNG export** — crisp high-resolution output for social media
+- **Carousel PDF export** — every page in one multi-page PDF, the only format LinkedIn accepts for a swipeable carousel
+- **2x PNG export** — this page or every page, at exactly 2x the design size on any display
 - **Auto-save** — designs persist to SQLite with debounced saves
 - **Dual-mode UI** — human-optimized + AI-agent-optimized (`?agent=true`)
+
+## Carousels
+
+LinkedIn retired native multi-image carousels in 2023 — a swipeable carousel is now
+published as a multi-page **document post**, which means a PDF. OpenDesign builds one
+end to end: add a page per slide, then **Export → Carousel PDF** writes them all into a
+single file, in canvas order, at the slide's own aspect ratio. Upload that PDF to
+LinkedIn as a document.
+
+Use the **LinkedIn Carousel** canvas size (1080x1350, 4:5) — it takes up the most room
+on a phone screen. Exports are assembled in the browser, so nothing leaves the machine.
 
 ## Quickstart
 

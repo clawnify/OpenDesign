@@ -11,6 +11,10 @@ export default defineConfig({
       "react-dom": "preact/compat",
       "react/jsx-runtime": "preact/jsx-runtime",
       "react-dom/test-utils": "preact/test-utils",
+      // See src/client/lib/jspdf-optional.ts
+      canvg: "/src/client/lib/jspdf-optional.ts",
+      html2canvas: "/src/client/lib/jspdf-optional.ts",
+      dompurify: "/src/client/lib/jspdf-optional.ts",
     },
   },
   server: {
