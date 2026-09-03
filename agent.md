@@ -20,11 +20,16 @@ design into a template you can drive without touching canvas JSON:
   field appears on.
 - `POST /api/designs/{id}/fill` — `{"values": {"headline": "..."}}`. Returns the
   filled pages plus `filled` and `unmatched`; the stored design is unchanged.
-  Add `"save": true` to write the result as a new design, which is how you turn
-  a list of rows into a batch of finished graphics.
+  Add `"save": true` to write the result as a new design you can then open and
+  export.
 
 Prefer these over editing `canvas_json` by hand. Text fields take a string,
 image fields take a URL, and one name may cover several objects or pages.
+
+`save: true` produces an editable design, not a rendered image — there is no
+server-side renderer. Use it for a handful of variants. Do not loop it over a
+large list: every variant becomes a row that `GET /api/designs` returns in full,
+and the user ends up with gallery entries rather than finished graphics.
 
 ## When to use this template
 Use this template when the user wants to:
@@ -32,4 +37,4 @@ Use this template when the user wants to:
 - Design LinkedIn posts, quote cards, or announcement banners
 - Build a simple graphic design tool
 - Create branded visual content
-- Generate many on-brand variants of one design from a list or a spreadsheet
+- Generate on-brand variants of one design by filling it with data

@@ -173,8 +173,26 @@ curl -X POST localhost:8787/api/designs/$ID/fill \
 The response carries the filled pages plus `filled` and `unmatched`, so a name
 that matches nothing is reported rather than failing the request. The stored
 design is left alone — add `"save": true` (and optionally `"name"`) to persist
-the result as a new design instead, which is how you loop a spreadsheet into a
-few hundred finished graphics.
+the result as a new design instead.
+
+### How far this scales today
+
+`save: true` writes a **new editable design**, not a rendered image, because
+there is no server-side rasterizer. That makes it the right tool for a handful
+of variants — an agent fills a card, opens it, exports it — and the wrong one
+for a spreadsheet:
+
+- Each saved variant is a row in `designs`, and `GET /api/designs` returns every
+  row with its full `canvas_json` and no pagination. A three-object card is
+  ~2.5 KB serialised; a branded design with an image is 10-40 KB. A few hundred
+  variants turn the gallery response into megabytes.
+- So a few hundred saved variants give you a few hundred gallery entries, not a
+  few hundred finished graphics.
+
+For real bulk output, drive `fill` without `save` and rasterize in the browser —
+the canvas is already there, and that loop is the missing piece rather than a
+server-side renderer. Until it exists, treat `save: true` as a small-N
+convenience.
 
 Worth knowing:
 
