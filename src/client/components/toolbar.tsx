@@ -9,14 +9,22 @@ import {
   Save,
   ChevronDown,
   Home,
+  RotateCcw,
 } from "lucide-preact";
-import { useEditor, CANVAS_SIZES } from "../context";
+import {
+  useEditor,
+  CANVAS_SIZES,
+  MIN_CANVAS_SIDE,
+  MAX_CANVAS_SIDE,
+} from "../context";
 
 export function Toolbar() {
   const {
     canvasWidth,
     canvasHeight,
     setCanvasSize,
+    undoResize,
+    canUndoResize,
     undo,
     redo,
     canUndo,
@@ -35,6 +43,8 @@ export function Toolbar() {
   } = useEditor();
 
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
+  const [customWidth, setCustomWidth] = useState("");
+  const [customHeight, setCustomHeight] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
 
@@ -42,6 +52,33 @@ export function Toolbar() {
     (s) => s.width === canvasWidth && s.height === canvasHeight
   );
   const sizeLabel = currentSize ? currentSize.label : `${canvasWidth} x ${canvasHeight}`;
+
+  const groups = CANVAS_SIZES.reduce<Record<string, typeof CANVAS_SIZES>>((acc, size) => {
+    (acc[size.group] ||= []).push(size);
+    return acc;
+  }, {});
+
+  const clampSide = (raw: string) => {
+    const n = Math.round(Number(raw));
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.min(Math.max(n, MIN_CANVAS_SIDE), MAX_CANVAS_SIDE);
+  };
+
+  const openSizeMenu = () => {
+    setCustomWidth(String(canvasWidth));
+    setCustomHeight(String(canvasHeight));
+    setShowSizeDropdown(true);
+  };
+
+  const applyCustomSize = () => {
+    const w = clampSide(customWidth);
+    const h = clampSide(customHeight);
+    if (w === null || h === null) return;
+    setCustomWidth(String(w));
+    setCustomHeight(String(h));
+    setCanvasSize(w, h);
+    setShowSizeDropdown(false);
+  };
 
   const startRename = () => {
     if (!activeDesign) return;
@@ -93,7 +130,7 @@ export function Toolbar() {
         <div class="relative">
           <button
             class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-300 cursor-pointer hover:text-zinc-900 hover:border-zinc-500 transition-all"
-            onClick={() => setShowSizeDropdown(!showSizeDropdown)}
+            onClick={() => (showSizeDropdown ? setShowSizeDropdown(false) : openSizeMenu())}
           >
             {sizeLabel}
             <ChevronDown size={12} />
@@ -101,30 +138,83 @@ export function Toolbar() {
           {showSizeDropdown && (
             <>
               <div class="fixed inset-0 z-10" onClick={() => setShowSizeDropdown(false)} />
-              <div class="absolute top-full left-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-xl z-20 min-w-[200px] py-1">
-                {CANVAS_SIZES.map((s) => (
-                  <button
-                    key={s.label}
-                    class={`w-full text-left px-3 py-1.5 text-xs cursor-pointer border-none transition-colors ${
-                      s.width === canvasWidth && s.height === canvasHeight
-                        ? "bg-accent/20 text-accent"
-                        : "text-zinc-600 bg-transparent hover:bg-zinc-100"
-                    }`}
-                    onClick={() => {
-                      setCanvasSize(s.width, s.height);
-                      setShowSizeDropdown(false);
-                    }}
-                  >
-                    <span class="font-medium">{s.label}</span>
-                    <span class="text-zinc-400 ml-2">
-                      {s.width} x {s.height}
-                    </span>
-                  </button>
+              <div class="absolute top-full left-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-xl z-20 min-w-[240px] py-1">
+                {Object.entries(groups).map(([group, sizes]) => (
+                  <div key={group}>
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      {group}
+                    </div>
+                    {sizes.map((s) => (
+                      <button
+                        key={s.label}
+                        class={`w-full text-left px-3 py-1.5 text-xs cursor-pointer border-none transition-colors ${
+                          s.width === canvasWidth && s.height === canvasHeight
+                            ? "bg-accent/20 text-accent"
+                            : "text-zinc-600 bg-transparent hover:bg-zinc-100"
+                        }`}
+                        onClick={() => {
+                          setCanvasSize(s.width, s.height);
+                          setShowSizeDropdown(false);
+                        }}
+                      >
+                        <span class="font-medium">{s.label}</span>
+                        <span class="text-zinc-400 ml-2">
+                          {s.width} x {s.height}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 ))}
+
+                <div class="mt-1 pt-2 border-t border-zinc-200 px-3 pb-1">
+                  <div class="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                    Custom
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      aria-label="Custom width in pixels"
+                      class="w-[68px] bg-zinc-100 border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 outline-none focus:border-accent"
+                      value={customWidth}
+                      min={MIN_CANVAS_SIDE}
+                      max={MAX_CANVAS_SIDE}
+                      onInput={(e) => setCustomWidth((e.target as HTMLInputElement).value)}
+                      onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
+                    />
+                    <span class="text-zinc-400 text-xs">x</span>
+                    <input
+                      type="number"
+                      aria-label="Custom height in pixels"
+                      class="w-[68px] bg-zinc-100 border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 outline-none focus:border-accent"
+                      value={customHeight}
+                      min={MIN_CANVAS_SIDE}
+                      max={MAX_CANVAS_SIDE}
+                      onInput={(e) => setCustomHeight((e.target as HTMLInputElement).value)}
+                      onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
+                    />
+                    <button
+                      class="px-2.5 py-1 rounded text-xs font-medium text-white bg-accent border-none cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={applyCustomSize}
+                    >
+                      Resize
+                    </button>
+                  </div>
+                </div>
               </div>
             </>
           )}
         </div>
+
+        {canUndoResize && (
+          <button
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-zinc-500 bg-transparent border border-zinc-300 cursor-pointer hover:text-zinc-900 hover:border-zinc-500 transition-all"
+            onClick={undoResize}
+            title="Restore the previous size and layout"
+          >
+            <RotateCcw size={11} />
+            Undo resize
+          </button>
+        )}
       </div>
 
       {/* Center: Undo / Redo */}

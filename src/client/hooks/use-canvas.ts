@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import * as fabric from "fabric";
 import type { Template } from "../types";
+import { reflowCanvas, type Dimensions } from "../resize";
 
 const MAX_HISTORY = 50;
 
@@ -30,6 +31,14 @@ export function useCanvasState() {
   const [selectedObject, setSelectedObject] = useState<fabric.FabricObject | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(1080);
   const [canvasHeight, setCanvasHeight] = useState(1080);
+  const canvasWidthRef = useRef(1080);
+  const canvasHeightRef = useRef(1080);
+  // A resize spans every page at once, so it cannot be expressed in the
+  // per-page undo stacks. It gets one snapshot of its own instead.
+  const resizeSnapshotRef = useRef<
+    { width: number; height: number; pages: Map<string, string> } | null
+  >(null);
+  const [canUndoResize, setCanUndoResize] = useState(false);
   const [zoom, setZoom] = useState(0.58);
   const [fitScale, setFitScale] = useState(0.58);
   const [canUndo, setCanUndo] = useState(false);
@@ -60,6 +69,12 @@ export function useCanvasState() {
     if (isRestoringRef.current.has(pageId)) return;
     const canvas = canvasMapRef.current.get(pageId);
     if (!canvas) return;
+    // An edit lands on top of the resize. Restoring the snapshot would now
+    // throw this work away too, so the resize stops being undoable here.
+    if (resizeSnapshotRef.current) {
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
+    }
     const json = JSON.stringify(canvas.toJSON());
     let hist = historyMapRef.current.get(pageId);
     if (!hist) {
@@ -113,6 +128,13 @@ export function useCanvasState() {
   const unregisterCanvas = useCallback((pageId: string) => {
     canvasMapRef.current.delete(pageId);
     historyMapRef.current.delete(pageId);
+    // The snapshot holds JSON keyed by page id. Once a page it captured is
+    // gone -- page deleted, or the editor left for another design -- it can no
+    // longer be restored onto the canvases that are actually mounted.
+    if (resizeSnapshotRef.current?.pages.has(pageId)) {
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
+    }
   }, []);
 
   const setActiveCanvas = useCallback((pageId: string) => {
@@ -338,21 +360,81 @@ export function useCanvasState() {
 
   // ── Canvas size ─────────────────────────────────────────────────────
 
-  const setCanvasSize = useCallback(
-    (width: number, height: number) => {
-      setCanvasWidth(width);
-      setCanvasHeight(height);
-      // Resize all canvases
-      const dpr = window.devicePixelRatio || 1;
-      for (const canvas of canvasMapRef.current.values()) {
-        canvas.setDimensions({ width: width * dpr, height: height * dpr }, { cssOnly: false });
-        canvas.setDimensions({ width, height }, { cssOnly: true });
-        canvas.setViewportTransform([dpr, 0, 0, dpr, 0, 0]);
-        canvas.requestRenderAll();
-      }
-    },
+  // Retarget every page's canvas to a new frame. Moves no artwork.
+  const applyDimensions = useCallback((width: number, height: number) => {
+    setCanvasWidth(width);
+    setCanvasHeight(height);
+    canvasWidthRef.current = width;
+    canvasHeightRef.current = height;
+    const dpr = window.devicePixelRatio || 1;
+    for (const canvas of canvasMapRef.current.values()) {
+      canvas.setDimensions({ width: width * dpr, height: height * dpr }, { cssOnly: false });
+      canvas.setDimensions({ width, height }, { cssOnly: true });
+      canvas.setViewportTransform([dpr, 0, 0, dpr, 0, 0]);
+      canvas.requestRenderAll();
+    }
+  }, []);
+
+  const getCanvasSize = useCallback(
+    (): Dimensions => ({ width: canvasWidthRef.current, height: canvasHeightRef.current }),
     []
   );
+
+  const setCanvasSize = useCallback(
+    (width: number, height: number, options?: { reflow?: boolean }) => {
+      const from = getCanvasSize();
+      const to = { width, height };
+
+      // Adopting a saved design's own frame: the stored artwork already fits it.
+      if (options?.reflow === false) {
+        applyDimensions(width, height);
+        return;
+      }
+      if (from.width === to.width && from.height === to.height) return;
+
+      const pages = new Map<string, string>();
+      for (const [pageId, canvas] of canvasMapRef.current) {
+        pages.set(pageId, JSON.stringify(canvas.toJSON()));
+      }
+      resizeSnapshotRef.current = { ...from, pages };
+      setCanUndoResize(true);
+
+      applyDimensions(width, height);
+      for (const [pageId, canvas] of canvasMapRef.current) {
+        isRestoringRef.current.add(pageId);
+        reflowCanvas(canvas, from, to);
+        isRestoringRef.current.delete(pageId);
+        // A resize is a commit point: undoing across it page by page would
+        // leave that page's artwork sized for the frame it no longer has.
+        historyMapRef.current.set(pageId, {
+          entries: [JSON.stringify(canvas.toJSON())],
+          index: 0,
+        });
+        updateUndoRedoState(pageId);
+      }
+    },
+    [applyDimensions, getCanvasSize, updateUndoRedoState]
+  );
+
+  // Restores the frame and every page's artwork together.
+  const undoResize = useCallback(() => {
+    const snapshot = resizeSnapshotRef.current;
+    if (!snapshot) return;
+    resizeSnapshotRef.current = null;
+    setCanUndoResize(false);
+    applyDimensions(snapshot.width, snapshot.height);
+    for (const [pageId, canvas] of canvasMapRef.current) {
+      const json = snapshot.pages.get(pageId);
+      if (!json) continue;
+      isRestoringRef.current.add(pageId);
+      canvas.loadFromJSON(JSON.parse(json)).then(() => {
+        canvas.requestRenderAll();
+        isRestoringRef.current.delete(pageId);
+        historyMapRef.current.set(pageId, { entries: [json], index: 0 });
+        updateUndoRedoState(pageId);
+      });
+    }
+  }, [applyDimensions, updateUndoRedoState]);
 
   // ── Zoom ────────────────────────────────────────────────────────────
 
@@ -410,18 +492,10 @@ export function useCanvasState() {
 
   const loadTemplate = useCallback(
     (template: Template) => {
-      setCanvasWidth(template.width);
-      setCanvasHeight(template.height);
-      // Template loading — resize all canvases to new dimensions
-      const dpr = window.devicePixelRatio || 1;
-      for (const canvas of canvasMapRef.current.values()) {
-        canvas.setDimensions(
-          { width: template.width * dpr, height: template.height * dpr },
-          { cssOnly: false }
-        );
-        canvas.setDimensions({ width: template.width, height: template.height }, { cssOnly: true });
-        canvas.setViewportTransform([dpr, 0, 0, dpr, 0, 0]);
-      }
+      // The template brings its own frame and artwork, so nothing is reflowed.
+      applyDimensions(template.width, template.height);
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
       // Load template JSON onto active canvas
       const canvas = getActiveCanvas();
       const pageId = activeCanvasIdRef.current;
@@ -438,7 +512,7 @@ export function useCanvasState() {
         });
       }
     },
-    [getActiveCanvas, updateUndoRedoState]
+    [applyDimensions, getActiveCanvas, updateUndoRedoState]
   );
 
   // ── Keyboard shortcuts ──────────────────────────────────────────────
@@ -497,6 +571,9 @@ export function useCanvasState() {
     canUndo,
     canRedo,
     setCanvasSize,
+    getCanvasSize,
+    undoResize,
+    canUndoResize,
     zoomToFit,
     zoomIn,
     zoomOut,

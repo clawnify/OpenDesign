@@ -2,19 +2,30 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type { Design, Template, Page } from "./types";
 import type * as fabric from "fabric";
+import type { Dimensions } from "./resize";
 
 export interface CanvasSize {
+  group: string;
   label: string;
   width: number;
   height: number;
 }
 
 export const CANVAS_SIZES: CanvasSize[] = [
-  { label: "LinkedIn Square", width: 1080, height: 1080 },
-  { label: "LinkedIn Landscape", width: 1200, height: 627 },
-  { label: "LinkedIn Portrait", width: 1200, height: 1500 },
-  { label: "Instagram Story", width: 1080, height: 1920 },
+  { group: "LinkedIn", label: "LinkedIn Square", width: 1080, height: 1080 },
+  { group: "LinkedIn", label: "LinkedIn Landscape", width: 1200, height: 627 },
+  { group: "LinkedIn", label: "LinkedIn Portrait", width: 1200, height: 1500 },
+  { group: "Instagram", label: "Instagram Portrait", width: 1080, height: 1350 },
+  { group: "Instagram", label: "Instagram Story", width: 1080, height: 1920 },
+  { group: "More", label: "Pinterest Pin", width: 1000, height: 1500 },
+  { group: "More", label: "YouTube Thumbnail", width: 1280, height: 720 },
+  { group: "More", label: "Presentation 16:9", width: 1920, height: 1080 },
 ];
+
+// Guardrails for the custom size fields. The upper bound keeps a typo from
+// allocating a canvas big enough to crash the tab.
+export const MIN_CANVAS_SIDE = 50;
+export const MAX_CANVAS_SIDE = 8000;
 
 export interface EditorContextValue {
   // Canvas (multi-canvas)
@@ -42,7 +53,10 @@ export interface EditorContextValue {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  setCanvasSize: (width: number, height: number) => void;
+  setCanvasSize: (width: number, height: number, options?: { reflow?: boolean }) => void;
+  getCanvasSize: () => Dimensions;
+  undoResize: () => void;
+  canUndoResize: boolean;
   zoomToFit: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
