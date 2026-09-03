@@ -215,7 +215,7 @@ export function Toolbar() {
                   <span>
                     <span class="block font-medium text-zinc-900">Carousel PDF</span>
                     <span class="block text-[10px] text-zinc-400">
-                      All {pages.length} {pages.length === 1 ? "page" : "pages"} — ready for LinkedIn
+                      All {pages.length} {pages.length === 1 ? "page" : "pages"}, ready for LinkedIn
                     </span>
                   </span>
                 </button>

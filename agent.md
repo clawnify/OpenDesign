@@ -8,7 +8,7 @@ A design editor for creating professional social media graphics, especially Link
 - Text editing with Google Fonts (Inter, Montserrat, Playfair Display)
 - Image uploads and placement
 - Multiple canvas sizes (1080x1080 square, 1080x1350 carousel, 1200x627 landscape)
-- Multi-page designs exported as one PDF — how a LinkedIn carousel is published
+- Multi-page designs exported as one PDF, which is how a LinkedIn carousel is published
 - 2x PNG export, one page or all of them
 - Save and manage multiple designs
 

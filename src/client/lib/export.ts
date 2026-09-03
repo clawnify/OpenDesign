@@ -1,6 +1,6 @@
 import type * as fabric from "fabric";
 
-/** Every export renders at 2x the design size — crisp in a feed, still light enough to upload. */
+/** Every export renders at 2x the design size: crisp in a feed, still light enough to upload. */
 export const EXPORT_SCALE = 2;
 
 /**
@@ -9,7 +9,7 @@ export const EXPORT_SCALE = 2;
  * PageCanvas sizes each canvas backstore by the device pixel ratio, so fabric's
  * own `width` already carries that ratio and `getZoom()` is the very same factor.
  * `toDataURL` scales `width` by the multiplier, so a fixed multiplier makes the
- * export grow with whatever display the editor happens to be open on — 4320px on
+ * export grow with whatever display the editor happens to be open on: 4320px on
  * a retina laptop, 2160px on an external 1x monitor, from the same design.
  * Dividing by the zoom cancels the ratio back out and pins the output size.
  *
@@ -38,7 +38,7 @@ export function slugify(name: string, fallback = "design"): string {
 }
 
 /**
- * Assemble the pages into one PDF — the only format LinkedIn accepts for a
+ * Assemble the pages into one PDF, the only format LinkedIn accepts for a
  * swipeable carousel since it retired native multi-image carousels in 2023.
  *
  * jsPDF swaps the page box to match `orientation`, so the orientation has to

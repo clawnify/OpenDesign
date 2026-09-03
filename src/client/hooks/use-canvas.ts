@@ -372,7 +372,7 @@ export function useCanvasState() {
 
   // ── Export ──────────────────────────────────────────────────────────
 
-  // Page ids come from the design, which owns their order — a Map has none.
+  // Page ids come from the design, which owns their order. A Map has none.
   const canvasesForPages = useCallback(
     (pageIds: string[]) =>
       pageIds
@@ -394,7 +394,7 @@ export function useCanvasState() {
     (pageIds: string[], designName: string) => {
       const canvases = canvasesForPages(pageIds);
       const slug = slugify(designName);
-      // Ceiling: one download per page, staggered — browsers drop downloads fired
+      // Ceiling: one download per page, staggered. Browsers drop downloads fired
       // in the same tick, and prompt once for a burst. Fine for the 5-20 slides a
       // social carousel runs to. If designs ever get long enough for that to be a
       // nuisance, zip them (fflate is already in the tree under jspdf) rather than
