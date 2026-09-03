@@ -42,3 +42,16 @@ INSERT OR IGNORE INTO templates (id, name, category, canvas_json, width, height,
 ('tips-list', 'Tips List', 'linkedin', '{"version":"6.0.0","objects":[{"type":"rect","left":0,"top":0,"width":1080,"height":1080,"fill":"#fafaf9"},{"type":"textbox","left":80,"top":80,"width":920,"text":"5 Tips for Better\nProductivity","fontSize":44,"fontFamily":"Montserrat","fontWeight":"800","fill":"#1c1917"},{"type":"textbox","left":80,"top":280,"width":920,"text":"1. Start with the hardest task\n\n2. Time-block your calendar\n\n3. Limit notifications\n\n4. Take regular breaks\n\n5. Review and reflect daily","fontSize":28,"fontFamily":"Inter","fontWeight":"400","fill":"#44403c","lineHeight":1.6}]}', 1080, 1080, 4),
 ('profile-card', 'Profile Card', 'linkedin', '{"version":"6.0.0","objects":[{"type":"rect","left":0,"top":0,"width":1080,"height":1080,"fill":"#18181b"},{"type":"circle","left":440,"top":180,"radius":100,"fill":"#3f3f46"},{"type":"textbox","left":80,"top":420,"width":920,"text":"Jane Smith","fontSize":40,"fontFamily":"Montserrat","fontWeight":"700","fill":"#fafafa","textAlign":"center"},{"type":"textbox","left":80,"top":490,"width":920,"text":"Product Designer @ TechCo","fontSize":22,"fontFamily":"Inter","fontWeight":"400","fill":"#a1a1aa","textAlign":"center"},{"type":"textbox","left":140,"top":600,"width":800,"text":"Passionate about creating intuitive user experiences that make complex tools feel simple.","fontSize":20,"fontFamily":"Inter","fontWeight":"400","fill":"#d4d4d8","textAlign":"center"}]}', 1080, 1080, 5),
 ('minimal-text', 'Minimal Text', 'linkedin', '{"version":"6.0.0","objects":[{"type":"rect","left":0,"top":0,"width":1080,"height":1080,"fill":"#f8fafc"},{"type":"textbox","left":120,"top":380,"width":840,"text":"Less is more.","fontSize":64,"fontFamily":"Playfair Display","fontWeight":"600","fill":"#0f172a","textAlign":"center"},{"type":"textbox","left":120,"top":520,"width":840,"text":"Sometimes the simplest message\nhas the biggest impact.","fontSize":22,"fontFamily":"Inter","fontWeight":"400","fill":"#64748b","textAlign":"center"}]}', 1080, 1080, 6);
+
+CREATE TABLE IF NOT EXISTS brand_kits (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))),
+  name TEXT NOT NULL DEFAULT 'My Brand',
+  -- JSON arrays/objects, kept as TEXT so the whole kit round-trips through
+  -- export/import as one portable blob.
+  colors TEXT NOT NULL DEFAULT '[]',
+  heading_font TEXT NOT NULL DEFAULT 'Montserrat',
+  body_font TEXT NOT NULL DEFAULT 'Inter',
+  logos TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);

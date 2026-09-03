@@ -13,19 +13,31 @@ import {
 } from "lucide-preact";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
+import { FONT_FAMILIES } from "../fonts";
 
-const FONT_FAMILIES = [
-  "Inter",
-  "Playfair Display",
-  "Montserrat",
-  "Poppins",
-  "Roboto",
-  "Open Sans",
-  "Lora",
-  "Raleway",
-  "Source Sans Pro",
-  "Merriweather",
-];
+/**
+ * The active kit's colours, offered wherever a colour is chosen. This is what
+ * "on brand" means day to day: the brand palette is one click away at the
+ * moment of picking, not a page you have to remember to visit.
+ */
+function BrandSwatches({ onPick }: { onPick: (color: string) => void }) {
+  const { activeBrandKit } = useEditor();
+  if (!activeBrandKit || activeBrandKit.colors.length === 0) return null;
+  return (
+    <div class="flex flex-wrap gap-1 mt-1.5">
+      {activeBrandKit.colors.map((color, i) => (
+        <button
+          key={`${color}-${i}`}
+          class="w-5 h-5 rounded border border-zinc-300 cursor-pointer transition-all hover:scale-110 hover:border-accent"
+          style={{ background: color }}
+          title={`${activeBrandKit.name} — ${color}`}
+          aria-label={`Use brand color ${color}`}
+          onClick={() => onPick(color)}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function RightSidebar() {
   const { selectedObject, updateSelectedObject, deleteSelected, canvas, setBackground, canvasWidth, canvasHeight } =
@@ -52,6 +64,7 @@ export function RightSidebar() {
             class="w-full h-8 rounded-md border border-zinc-300 cursor-pointer bg-transparent"
             onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
           />
+          <BrandSwatches onPick={(color) => setBackground("color", color)} />
         </div>
       </aside>
     );
@@ -220,6 +233,7 @@ export function RightSidebar() {
                   }
                 />
               </div>
+              <BrandSwatches onPick={(color) => updateSelectedObject({ fill: color })} />
             </div>
 
             {/* Line height */}
@@ -290,6 +304,7 @@ export function RightSidebar() {
                   }
                 />
               </div>
+              <BrandSwatches onPick={(color) => updateSelectedObject({ fill: color })} />
             </div>
 
             {/* Stroke */}
