@@ -9,6 +9,22 @@ A design editor for creating professional social media graphics, especially Link
 - Image uploads and placement
 - Multiple canvas sizes (1080x1080 square, 1200x627 landscape)
 - Save and manage multiple designs
+- Template fields — named slots you can fill from data over the API
+
+## Filling a design from data
+Objects in a design can be given a field name in the editor, which turns the
+design into a template you can drive without touching canvas JSON:
+
+- `GET /api/designs/{id}/fields` — what this design can be filled with. Returns
+  `name`, `type` (`text` or `image`), the current `value`, and the pages the
+  field appears on.
+- `POST /api/designs/{id}/fill` — `{"values": {"headline": "..."}}`. Returns the
+  filled pages plus `filled` and `unmatched`; the stored design is unchanged.
+  Add `"save": true` to write the result as a new design, which is how you turn
+  a list of rows into a batch of finished graphics.
+
+Prefer these over editing `canvas_json` by hand. Text fields take a string,
+image fields take a URL, and one name may cover several objects or pages.
 
 ## When to use this template
 Use this template when the user wants to:
@@ -16,3 +32,4 @@ Use this template when the user wants to:
 - Design LinkedIn posts, quote cards, or announcement banners
 - Build a simple graphic design tool
 - Create branded visual content
+- Generate many on-brand variants of one design from a list or a spreadsheet

@@ -32,6 +32,24 @@ test("fields inside groups are found", () => {
   assert.deepEqual(fields.map((f) => f.name), ["headline"]);
 });
 
+test("Fabric v6's capitalised type names are recognised", () => {
+  // A canvas that has been through the editor serialises as "Textbox"/"Image"/
+  // "Rect", not the lowercase names used in the seed templates. Both must work.
+  const objects = [
+    { type: "Textbox", text: "hi", fieldName: "headline" },
+    { type: "Image", src: "https://example.com/a.png", fieldName: "logo" },
+    { type: "Rect", fill: "#000", fieldName: "backdrop" },
+  ];
+
+  assert.deepEqual(
+    collectFields([page("p1", objects)]).map((f) => [f.name, f.type]),
+    [
+      ["headline", "text"],
+      ["logo", "image"],
+    ]
+  );
+});
+
 test("a tag on an object that is neither text nor image is ignored", () => {
   assert.deepEqual(collectFields([page("p1", [{ type: "rect", fieldName: "box" }])]), []);
 });
