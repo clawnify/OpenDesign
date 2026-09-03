@@ -69,6 +69,12 @@ export function useCanvasState() {
     if (isRestoringRef.current.has(pageId)) return;
     const canvas = canvasMapRef.current.get(pageId);
     if (!canvas) return;
+    // An edit lands on top of the resize. Restoring the snapshot would now
+    // throw this work away too, so the resize stops being undoable here.
+    if (resizeSnapshotRef.current) {
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
+    }
     const json = JSON.stringify(canvas.toJSON());
     let hist = historyMapRef.current.get(pageId);
     if (!hist) {
@@ -122,6 +128,13 @@ export function useCanvasState() {
   const unregisterCanvas = useCallback((pageId: string) => {
     canvasMapRef.current.delete(pageId);
     historyMapRef.current.delete(pageId);
+    // The snapshot holds JSON keyed by page id. Once a page it captured is
+    // gone -- page deleted, or the editor left for another design -- it can no
+    // longer be restored onto the canvases that are actually mounted.
+    if (resizeSnapshotRef.current?.pages.has(pageId)) {
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
+    }
   }, []);
 
   const setActiveCanvas = useCallback((pageId: string) => {
