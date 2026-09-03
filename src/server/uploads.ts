@@ -1,55 +1,40 @@
-import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+let _bucket: R2Bucket;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOADS_DIR = join(__dirname, "..", "..", "uploads");
-mkdirSync(UPLOADS_DIR, { recursive: true });
-
-const MIME: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  gif: "image/gif",
-  webp: "image/webp",
-  svg: "image/svg+xml",
-};
-
-function mime(filename: string): string {
-  return MIME[filename.split(".").pop()?.toLowerCase() || "png"] || "application/octet-stream";
+export function initUploads(bucket: R2Bucket) {
+  _bucket = bucket;
 }
 
-function sanitize(filename: string): string {
-  return filename.replace(/[^a-zA-Z0-9._-]/g, "");
-}
-
-export async function putUpload(filename: string, data: ArrayBuffer | Uint8Array, contentType: string): Promise<string> {
-  writeFileSync(join(UPLOADS_DIR, filename), Buffer.from(data as ArrayBuffer));
+export async function putUpload(
+  filename: string,
+  data: ArrayBuffer | Uint8Array,
+  contentType: string,
+): Promise<string> {
+  await _bucket.put(filename, data, { httpMetadata: { contentType } });
   return `/api/uploads/${filename}`;
 }
 
-export async function getUpload(filename: string): Promise<{ data: ArrayBuffer; contentType: string } | null> {
-  const safe = sanitize(filename);
-  const filePath = join(UPLOADS_DIR, safe);
-  if (!existsSync(filePath)) return null;
-  const buf = readFileSync(filePath);
+export async function getUpload(
+  filename: string,
+): Promise<{ data: ArrayBuffer; contentType: string } | null> {
+  const obj = await _bucket.get(filename);
+  if (!obj) return null;
   return {
-    data: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
-    contentType: mime(safe),
+    data: await obj.arrayBuffer(),
+    contentType: obj.httpMetadata?.contentType || "application/octet-stream",
   };
 }
 
 export async function deleteUpload(filename: string): Promise<void> {
-  const safe = sanitize(filename);
-  const filePath = join(UPLOADS_DIR, safe);
-  if (existsSync(filePath)) unlinkSync(filePath);
+  await _bucket.delete(filename);
 }
 
-export async function readUploadAsBase64DataUrl(filename: string): Promise<string | null> {
-  const safe = sanitize(filename);
-  const filePath = join(UPLOADS_DIR, safe);
-  if (!existsSync(filePath)) return null;
-  const buf = readFileSync(filePath);
-  const contentType = mime(safe);
-  return `data:${contentType};base64,${buf.toString("base64")}`;
+export async function readUploadAsBase64DataUrl(
+  filename: string,
+): Promise<string | null> {
+  const result = await getUpload(filename);
+  if (!result) return null;
+  const bytes = new Uint8Array(result.data);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return `data:${result.contentType};base64,${btoa(binary)}`;
 }

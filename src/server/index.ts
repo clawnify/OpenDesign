@@ -1,10 +1,17 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
-import { putUpload, getUpload } from "./uploads.js";
+import { initUploads, putUpload, getUpload } from "./uploads.js";
 
-type Env = { Bindings: { DB: D1Database } };
+type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
+
+// Bind the R2 bucket before any handler runs. Registered ahead of every route
+// because Hono runs middleware in registration order.
+app.use("*", async (c, next) => {
+  initUploads(c.env.UPLOADS);
+  await next();
+});
 
 // ── Schemas ──────────────────────────────────────────────────────────
 

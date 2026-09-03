@@ -38,7 +38,7 @@ pnpm install
 pnpm run dev
 ```
 
-Open `http://localhost:5178` in your browser. Data persists in `data.db`, uploads in `uploads/`.
+Open `http://localhost:5173` in your browser. Designs and uploads persist in the local D1 and R2 simulators under `.wrangler/`.
 
 ### Agent Mode (for OpenClaw / Claude Code)
 
