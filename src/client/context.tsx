@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import type { Design, Template, Page } from "./types";
+import type { Design, Template, Page, BrandKit } from "./types";
 import type * as fabric from "fabric";
 
 export interface CanvasSize {
@@ -74,6 +74,16 @@ export interface EditorContextValue {
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, title: string) => Promise<void>;
   switchToPage: (pageId: string) => void;
+
+  // Brand kits
+  brandKits: BrandKit[];
+  activeBrandKit: BrandKit | null;
+  activeBrandKitId: string | null;
+  setActiveBrandKitId: (id: string | null) => void;
+  createBrandKit: (input?: Partial<Omit<BrandKit, "id" | "created_at" | "updated_at">>) => Promise<BrandKit>;
+  updateBrandKit: (id: string, input: Partial<Omit<BrandKit, "id" | "created_at" | "updated_at">>) => Promise<void>;
+  deleteBrandKit: (id: string) => Promise<void>;
+  applyBrandKit: (kit: BrandKit) => void;
 
   // Templates
   templates: Template[];

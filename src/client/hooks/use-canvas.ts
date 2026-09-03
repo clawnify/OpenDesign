@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import * as fabric from "fabric";
-import type { Template } from "../types";
+import type { Template, BrandKit } from "../types";
+import { buildColorMap, brandFontFor, isHex } from "../lib/brand";
 
 const MAX_HISTORY = 50;
 
@@ -441,6 +442,49 @@ export function useCanvasState() {
     [getActiveCanvas, updateUndoRedoState]
   );
 
+  // ── Brand kit ───────────────────────────────────────────────────────
+
+  // Re-brands the page in one pass: text takes the kit's heading/body font, and
+  // every colour in the design is swapped for the brand colour of the same
+  // light-to-dark rank (see lib/brand.ts). It is one history entry, so a user
+  // who does not like the result presses Cmd+Z once.
+  const applyBrandKit = useCallback(
+    (kit: BrandKit) => {
+      const canvas = getActiveCanvas();
+      const pageId = activeCanvasIdRef.current;
+      if (!canvas || !pageId) return;
+
+      const objects = canvas.getObjects();
+      const used: string[] = [];
+      if (isHex(canvas.backgroundColor)) used.push(canvas.backgroundColor);
+      for (const obj of objects) {
+        if (isHex(obj.fill)) used.push(obj.fill);
+        if (isHex(obj.stroke)) used.push(obj.stroke);
+      }
+      const colorMap = buildColorMap(used, kit.colors);
+      const remap = (v: unknown) => (isHex(v) ? colorMap.get(v.toLowerCase()) ?? v : v);
+
+      if (isHex(canvas.backgroundColor)) {
+        canvas.backgroundColor = remap(canvas.backgroundColor) as string;
+      }
+
+      for (const obj of objects) {
+        const props: Record<string, unknown> = {};
+        if (isHex(obj.fill)) props.fill = remap(obj.fill);
+        if (isHex(obj.stroke)) props.stroke = remap(obj.stroke);
+        if (obj instanceof fabric.Textbox || obj instanceof fabric.IText) {
+          props.fontFamily = brandFontFor(obj.fontSize ?? 18, kit);
+        }
+        if (Object.keys(props).length > 0) obj.set(props as Partial<fabric.FabricObject>);
+      }
+
+      canvas.requestRenderAll();
+      saveHistory(pageId);
+      setSelectedObject((prev) => (prev ? ({ ...prev } as fabric.FabricObject) : null));
+    },
+    [getActiveCanvas, saveHistory]
+  );
+
   // ── Keyboard shortcuts ──────────────────────────────────────────────
 
   useEffect(() => {
@@ -504,5 +548,6 @@ export function useCanvasState() {
     getCanvasJSON,
     getCanvasJSONForPage,
     loadTemplate,
+    applyBrandKit,
   };
 }

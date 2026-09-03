@@ -10,15 +10,18 @@ import {
   Palette,
   LayoutGrid,
   Sparkles,
+  SwatchBook,
 } from "lucide-preact";
 import { useEditor } from "../context";
 import { TemplateCard } from "./template-card";
 import { DesignList } from "./design-list";
+import { BrandKitPanel } from "./brand-kit-panel";
 
-type Section = "templates" | "text" | "shapes" | "images" | "background" | "designs";
+type Section = "templates" | "brand" | "text" | "shapes" | "images" | "background" | "designs";
 
 const SECTIONS: { key: Section; icon: typeof LayoutGrid; label: string }[] = [
   { key: "templates", icon: Sparkles, label: "Templates" },
+  { key: "brand", icon: SwatchBook, label: "Brand" },
   { key: "shapes", icon: Square, label: "Elements" },
   { key: "text", icon: Type, label: "Text" },
   { key: "images", icon: Upload, label: "Uploads" },
@@ -28,6 +31,7 @@ const SECTIONS: { key: Section; icon: typeof LayoutGrid; label: string }[] = [
 
 const SECTION_TITLES: Record<Section, string> = {
   templates: "Templates",
+  brand: "Brand Kit",
   shapes: "Elements",
   text: "Text",
   images: "Uploads",
@@ -153,6 +157,8 @@ export function LeftSidebar() {
                     </div>
                   </div>
                 )}
+
+                {activeSection === "brand" && <BrandKitPanel />}
 
                 {activeSection === "text" && (
                   <div class="flex flex-col gap-2">

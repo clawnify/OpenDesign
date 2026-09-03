@@ -22,6 +22,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 - **Text editing** — font family, size, weight, alignment, color, line height, letter spacing
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
 - **Image uploads** — drag-and-drop or click to upload, place on canvas
+- **Brand kits** — save a palette, a heading/body font pair and your logos, then apply them to any design in one click. Brand swatches appear wherever you pick a color. Kits export and import as plain JSON, so a kit moves between installs or over to a client instead of being stranded in one account
 - **Backgrounds** — solid colors, gradients, uploaded images
 - **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
 - **Undo/Redo** — full history with keyboard shortcuts (Cmd+Z / Cmd+Shift+Z)

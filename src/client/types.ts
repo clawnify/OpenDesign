@@ -22,6 +22,17 @@ export interface DesignWithPages extends Design {
   pages: Page[];
 }
 
+export interface BrandKit {
+  id: string;
+  name: string;
+  colors: string[];
+  heading_font: string;
+  body_font: string;
+  logos: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Template {
   id: string;
   name: string;
