@@ -32,11 +32,17 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 ## Carousels
 
-LinkedIn retired native multi-image carousels in 2023 — a swipeable carousel is now
-published as a multi-page **document post**, which means a PDF. OpenDesign builds one
-end to end: add a page per slide, then **Export → Carousel PDF** writes them all into a
-single file, in canvas order, at the slide's own aspect ratio. Upload that PDF to
-LinkedIn as a document.
+A swipeable carousel on LinkedIn is a **document post**. LinkedIn's own help pages
+document the format — PDF, DOC/DOCX or PPT/PPTX, up to 300 pages and 100 MB — and the
+short-lived native multi-image carousel it shipped in 2022 was removed in June 2023,
+with existing carousel posts deleted that December. Uploading a document is the way.
+
+OpenDesign builds one end to end: add a page per slide, then **Export → Carousel PDF**
+writes them all into a single file, in canvas order, at the slide's own aspect ratio.
+Upload that PDF to LinkedIn as a document.
+
+> Format and limits per [LinkedIn Help: upload and share documents](https://www.linkedin.com/help/linkedin/answer/a518909).
+> Note that *Carousel Ads* is a separate paid ads product and is unrelated to this.
 
 Use the **LinkedIn Carousel** canvas size (1080x1350, 4:5) — it takes up the most room
 on a phone screen. Exports are assembled in the browser, so nothing leaves the machine.
