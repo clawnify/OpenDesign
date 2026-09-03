@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler d1 execute open-design-db --local --file=src/server/schema.sql && concurrently -n ui,api -c cyan,green \"vite\" \"wrangler dev --port 8787\"",
+    "test": "esbuild src/server/fields.test.ts --bundle --platform=node --format=esm --outfile=.test-build/fields.test.mjs --log-level=warning && node --test .test-build/fields.test.mjs",
     "build": "vite build"
   },
   "dependencies": {
@@ -22,8 +23,10 @@
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.0",
+    "@types/node": "^26.4.1",
     "@types/webfontloader": "^1.6.38",
     "concurrently": "^9.0.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "wrangler": "^4.0.0"
