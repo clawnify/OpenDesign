@@ -2,10 +2,10 @@
   "$schema": "https://app.clawnify.com/schema/v1/clawnify.json",
   "version": 1,
   "name": "OpenDesign",
-  "description": "Design editor for creating professional social media graphics, LinkedIn posts, and visual content with a canvas-based UI, templates, multi-page support, image uploads, and text/shape tools. Like Canva. Best for graphic design tools, social media post creators, banner makers, or any visual content editor.",
+  "description": "Design editor for creating professional social media graphics, LinkedIn posts, carousels, and visual content with a canvas-based UI, templates, multi-page support, image uploads, and text/shape tools. Exports multi-page designs as a LinkedIn-ready carousel PDF, or as 2x PNGs. Like Canva. Best for graphic design tools, social media post creators, carousel makers, banner makers, or any visual content editor.",
   "icon": "icon.svg",
   "screenshot": "https://github.com/user-attachments/assets/55fcc0aa-4606-4f80-b56a-7734d7673914",
-  "tags": ["design", "graphics", "social-media", "canvas"],
+  "tags": ["design", "graphics", "social-media", "canvas", "carousel", "linkedin"],
 
   "app": {
     "framework": "preact+hono",
