@@ -414,7 +414,14 @@ app.get("/api/uploads/:filename", async (c) => {
   if (!result) return c.json({ error: "Not found" }, 404);
 
   return new Response(result.data, {
-    headers: { "Content-Type": result.contentType, "Cache-Control": "public, max-age=31536000" },
+    headers: {
+      "Content-Type": result.contentType,
+      "Cache-Control": "public, max-age=31536000",
+      // Uploads include SVG, which can carry script. Opened directly, the file
+      // must not run as a page on the app's origin; <img> and canvas are unaffected.
+      "Content-Security-Policy": "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'",
+      "X-Content-Type-Options": "nosniff",
+    },
   });
 });
 
