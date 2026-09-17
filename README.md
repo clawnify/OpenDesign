@@ -94,15 +94,17 @@ OpenClaw agents can also use the browser tool to visually interact with the edit
 ## Architecture
 
 ```
+schema.sql      — SQLite schema (designs, templates, pages)
+demo/seed.sql   — Sample designs for the Clawnify demo workspace
 src/
   server/
-    schema.sql  — SQLite schema (designs, templates) + template seeds
     db.ts       — SQLite wrapper (query, get, run, transaction)
     index.ts    — Hono REST API (designs CRUD, templates, uploads)
-    uploads.ts  — Local file upload management
+    uploads.ts  — Image uploads in the app's R2 bucket
     dev.ts      — Dev server with static file serving
   client/
-    app.tsx           — Root component with WebFont loading
+    app.tsx           — Root component
+    fonts.ts          — Bundled canvas fonts
     context.tsx       — Editor context + canvas size presets
     hooks/
       use-canvas.ts   — Fabric.js state, undo/redo, zoom, export

@@ -1,9 +1,9 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
-import { putUpload, getUpload } from "./uploads.js";
+import { initUploads, putUpload, getUpload } from "./uploads.js";
 import { SEED_TEMPLATES } from "./seed-templates.js";
 
-type Env = { Bindings: { DB: D1Database } };
+type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
 
@@ -40,7 +40,8 @@ async function ensureSeeded() {
 }
 
 // Runs after createApp's own initDB middleware, so the DB is ready here.
-app.use("*", async (_c, next) => {
+app.use("*", async (c, next) => {
+  initUploads(c.env.UPLOADS);
   await ensureSeeded();
   await next();
 });
@@ -145,11 +146,12 @@ const createDesign = createRoute({
 app.openapi(createDesign, async (c) => {
   const { name, canvas_json, width, height } = c.req.valid("json");
   const canvasData = canvas_json || "{}";
-  await run(
-    "INSERT INTO designs (name, canvas_json, width, height) VALUES (?, ?, ?, ?)",
+  // RETURNING hands back the row just inserted; "newest by created_at" can pick
+  // another design created in the same second.
+  const row = await get<z.infer<typeof DesignSchema>>(
+    "INSERT INTO designs (name, canvas_json, width, height) VALUES (?, ?, ?, ?) RETURNING *",
     [name || "Untitled Design", canvasData, width || 1080, height || 1080]
   );
-  const row = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs ORDER BY created_at DESC LIMIT 1");
   // Auto-create first page
   await run(
     "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?)",
@@ -256,11 +258,10 @@ app.openapi(addPage, async (c) => {
     insertOrder = (maxOrder?.m ?? -1) + 1;
   }
 
-  await run(
-    "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?)",
+  const page = await get<z.infer<typeof PageSchema>>(
+    "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?) RETURNING *",
     [id, title, body.canvas_json || "{}", insertOrder]
   );
-  const page = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE design_id = ? ORDER BY created_at DESC LIMIT 1", [id]);
   return c.json(page!, 200);
 });
 

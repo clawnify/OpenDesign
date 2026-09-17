@@ -9,14 +9,47 @@ importers:
   .:
     dependencies:
       '@clawnify/app':
-        specifier: ^0.1.0
-        version: 0.1.0(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)
+        specifier: ^0.2.1
+        version: 0.2.1(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)
       '@clawnify/db':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/lora':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/merriweather':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/montserrat':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/open-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/playfair-display':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/poppins':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/raleway':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/roboto':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/source-sans-pro':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@hono/zod-openapi':
         specifier: ^0.18.0
         version: 0.18.4(hono@4.12.10)(zod@3.25.76)
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tailwindcss/vite':
         specifier: ^4.2.2
         version: 4.2.2(vite@6.4.1(@types/node@25.5.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
@@ -35,9 +68,6 @@ importers:
       tailwindcss:
         specifier: ^4.2.2
         version: 4.2.2
-      webfontloader:
-        specifier: ^1.6.28
-        version: 1.6.28
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -45,9 +75,6 @@ importers:
       '@preact/preset-vite':
         specifier: ^2.9.0
         version: 2.10.5(@babel/core@7.29.0)(preact@10.29.1)(rollup@4.60.1)(vite@6.4.1(@types/node@25.5.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.8.3))
-      '@types/webfontloader':
-        specifier: ^1.6.38
-        version: 1.6.38
       concurrently:
         specifier: ^9.0.0
         version: 9.2.1
@@ -161,17 +188,24 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@clawnify/app@0.1.0':
-    resolution: {integrity: sha512-U0m4EzjXlesnjDfx7rVF7sgb4JwnENlelJ2mQPwGoCxKYTTzNwhQcpjMdfq71RD6eNJ1/EGe6qEYIRWv/1xxLQ==}
+  '@clawnify/app@0.2.1':
+    resolution: {integrity: sha512-t6fx4rnbEAewU3fH/WGKfWhfhZgVbLp1JgnpCR0YSHaE6rYwxEmgHAYlN3q5gSjYutsWmXANFqro3wuyxWZlTA==}
     peerDependencies:
       '@hono/zod-openapi': '>=0.18 <1'
+      '@phosphor-icons/react': '>=2'
       hono: '*'
+      react: '>=18'
+    peerDependenciesMeta:
+      '@phosphor-icons/react':
+        optional: true
+      react:
+        optional: true
 
-  '@clawnify/db@0.4.1':
-    resolution: {integrity: sha512-Ck9RGqEElt6P/3S9quxvr2MIg8mZk1n9wFftH3PpGPFnpA6hbk0td67oaioeMRuDCn7vePcJCeyYEkbvNVYy/g==}
+  '@clawnify/db@0.4.2':
+    resolution: {integrity: sha512-s+G/5bDVFx7Na8WVETfl8EhyPcbmgs5LIE1TsM0vGUOAtPihQGlVX1xpfmg5lsMv8+OChKaHsZIMnzpXY8pyAw==}
 
-  '@clawnify/routes@0.2.1':
-    resolution: {integrity: sha512-syrH1Sk4uxXVI9Yo76yLrccAEpcwAUDxvxL3/K+QnLHFetPU/RaterpwXNbzonA2gtY7xBmYfJ66mgEw280HaQ==}
+  '@clawnify/routes@0.2.2':
+    resolution: {integrity: sha512-+s7gjRyH8bmIUHQDHmmwGyUeEcV5m+IoWEYr2tLiWdVW7WKlFlgeKIuJ61vW9mc9k4TizL+B+Tg8qJ72zAbvOA==}
     peerDependencies:
       '@hono/zod-openapi': '>=0.18 <1'
       hono: '*'
@@ -694,6 +728,36 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@fontsource/inter@5.3.0':
+    resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+
+  '@fontsource/lora@5.3.0':
+    resolution: {integrity: sha512-OK1g1z01rHVPqO5aw/FOIoDqc46KKYZdgL3NOLkxLWDk6QhDHhdr/h2BV1cke6gTvR1tzpDfdKyUkGsC+sQLeQ==}
+
+  '@fontsource/merriweather@5.3.0':
+    resolution: {integrity: sha512-9LpPsNTYzRALj468Uj1K9Usl5eXk991L/kKmcpdWbTF1na9NfMyAXMgUABlMReViU1MYBz9kJ8jEzEOtX9qGDg==}
+
+  '@fontsource/montserrat@5.3.0':
+    resolution: {integrity: sha512-iQPDtZOnmM5ih4JBGaMSXisRap0ixb9bAUw2hDtY7EjVfaqiiNlKtVuJl9XclxUwtwMMHNcWXfQR6zI9x05+Tg==}
+
+  '@fontsource/open-sans@5.3.0':
+    resolution: {integrity: sha512-V1bdMlGNyZrJwzrdusshMOw2YR0aqYDL7kOo9dkxUEKl8dFv66A9HLckOOXl572sG/7ohhDQrCrTFGSn9LZcSw==}
+
+  '@fontsource/playfair-display@5.3.0':
+    resolution: {integrity: sha512-uJSABalvdWc10fEPppQjQocamT21LEyRfzzWfRfqbkPz+sRv+kKpYDKyluBUskvJREkJTos9epj1WjQROGu99Q==}
+
+  '@fontsource/poppins@5.3.0':
+    resolution: {integrity: sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==}
+
+  '@fontsource/raleway@5.3.0':
+    resolution: {integrity: sha512-BTWr1I14Ji0DWpS/KCIq/CXcvxXWgMO73gynWpbYv7A5wlPhLevozgRmdPJvZmUf0fhH+Lju+F4nigJ6Ums24A==}
+
+  '@fontsource/roboto@5.3.0':
+    resolution: {integrity: sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q==}
+
+  '@fontsource/source-sans-pro@5.3.0':
+    resolution: {integrity: sha512-nd96qXI4stbyRPNEygS2cNhMkAc1kkW9+ORmIOK0oelPTyiitRPk/+9+HUuUYuEjwRRkK/+Gat2J9/NMJest/A==}
+
   '@hono/zod-openapi@0.18.4':
     resolution: {integrity: sha512-6NHMHU96Hh32B1yDhb94Z4Z5/POsmEu2AXpWLWcBq9arskRnOMt2752yEoXoADV8WUAc7H1IkNaQHGj1ytXbYw==}
     engines: {node: '>=16.0.0'}
@@ -882,6 +946,13 @@ packages:
   '@mapbox/node-pre-gyp@1.0.11':
     resolution: {integrity: sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==}
     hasBin: true
+
+  '@phosphor-icons/react@2.1.10':
+    resolution: {integrity: sha512-vt8Tvq8GLjheAZZYa+YG/pW7HDbov8El/MANW8pOAz4eGxrwhnbfrQZq0Cp4q8zBEu8NIhHdnr+r8thnfRSNYA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>= 16.8'
+      react-dom: '>= 16.8'
 
   '@poppinss/colors@4.1.6':
     resolution: {integrity: sha512-H9xkIdFswbS8n1d6vmRd8+c10t2Qe+rZITbbDHHkQixH5+2x1FDGmi/0K+WgWiqQFKPSlIYB7jlH6Kpfn6Fleg==}
@@ -1176,9 +1247,6 @@ packages:
 
   '@types/node@25.5.2':
     resolution: {integrity: sha512-tO4ZIRKNC+MDWV4qKVZe3Ql/woTnmHDr5JD8UI5hn2pwBrHEwOEMZK7WlNb5RKB6EoJ02gwmQS9OrjuFnZYdpg==}
-
-  '@types/webfontloader@1.6.38':
-    resolution: {integrity: sha512-kUaF72Fv202suFx6yBrwXqeVRMx7hGtJTesyESZgn9sEPCUeDXm2p0SiyS1MTqW74nQP4p7JyrOCwZ7pNFns4w==}
 
   abab@2.0.6:
     resolution: {integrity: sha512-j2afSsaIENvHZN2B8GOpF566vZ5WVk5opAiMTvWgaQT8DkbOqsTfvNAvHoRGU2zzP8cPoqys+xHTRDWW8L+/BA==}
@@ -1923,6 +1991,15 @@ packages:
   querystringify@2.2.0:
     resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
 
+  react-dom@19.3.0:
+    resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
+    peerDependencies:
+      react: ^19.3.0
+
+  react@19.3.0:
+    resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
+    engines: {node: '>=0.10.0'}
+
   readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
     engines: {node: '>= 6'}
@@ -1959,6 +2036,9 @@ packages:
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
+
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -2153,9 +2233,6 @@ packages:
     resolution: {integrity: sha512-d+BFHzbiCx6zGfz0HyQ6Rg69w9k19nviJspaj4yNscGjrHu94sVP+aRm75yEbCh+r2/yR+7q6hux9LVtbuTGBw==}
     engines: {node: '>=14'}
 
-  webfontloader@1.6.28:
-    resolution: {integrity: sha512-Egb0oFEga6f+nSgasH3E0M405Pzn6y3/9tOVanv/DLfa1YBIgcv90L18YyWnvXkRbIM17v5Kv6IT2N6g1x5tvQ==}
-
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
@@ -2203,18 +2280,6 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
-
-  ws@8.20.0:
-    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
 
   ws@8.20.1:
     resolution: {integrity: sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w==}
@@ -2406,12 +2471,15 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@clawnify/app@0.1.0(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)':
+  '@clawnify/app@0.2.1(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)':
     dependencies:
-      '@clawnify/db': 0.4.1
-      '@clawnify/routes': 0.2.1(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)
+      '@clawnify/db': 0.4.2
+      '@clawnify/routes': 0.2.2(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)
       '@hono/zod-openapi': 0.18.4(hono@4.12.10)(zod@3.25.76)
       hono: 4.12.10
+    optionalDependencies:
+      '@phosphor-icons/react': 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react: 19.3.0
     transitivePeerDependencies:
       - '@aws-sdk/client-rds-data'
       - '@cloudflare/workers-types'
@@ -2443,7 +2511,7 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@clawnify/db@0.4.1':
+  '@clawnify/db@0.4.2':
     dependencies:
       drizzle-orm: 0.45.2
     transitivePeerDependencies:
@@ -2477,7 +2545,7 @@ snapshots:
       - sql.js
       - sqlite3
 
-  '@clawnify/routes@0.2.1(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)':
+  '@clawnify/routes@0.2.2(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)':
     dependencies:
       '@hono/zod-openapi': 0.18.4(hono@4.12.10)(zod@3.25.76)
       hono: 4.12.10
@@ -2748,6 +2816,26 @@ snapshots:
   '@esbuild/win32-x64@0.27.7':
     optional: true
 
+  '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/lora@5.3.0': {}
+
+  '@fontsource/merriweather@5.3.0': {}
+
+  '@fontsource/montserrat@5.3.0': {}
+
+  '@fontsource/open-sans@5.3.0': {}
+
+  '@fontsource/playfair-display@5.3.0': {}
+
+  '@fontsource/poppins@5.3.0': {}
+
+  '@fontsource/raleway@5.3.0': {}
+
+  '@fontsource/roboto@5.3.0': {}
+
+  '@fontsource/source-sans-pro@5.3.0': {}
+
   '@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76)':
     dependencies:
       '@asteasolutions/zod-to-openapi': 7.3.4(zod@3.25.76)
@@ -2895,6 +2983,11 @@ snapshots:
       - encoding
       - supports-color
     optional: true
+
+  '@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   '@poppinss/colors@4.1.6':
     dependencies:
@@ -3116,8 +3209,6 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
     optional: true
-
-  '@types/webfontloader@1.6.38': {}
 
   abab@2.0.6:
     optional: true
@@ -3668,7 +3759,7 @@ snapshots:
       whatwg-encoding: 2.0.0
       whatwg-mimetype: 3.0.0
       whatwg-url: 11.0.0
-      ws: 8.20.0
+      ws: 8.20.1
       xml-name-validator: 4.0.0
     optionalDependencies:
       canvas: 2.11.2
@@ -3888,6 +3979,13 @@ snapshots:
   querystringify@2.2.0:
     optional: true
 
+  react-dom@19.3.0(react@19.3.0):
+    dependencies:
+      react: 19.3.0
+      scheduler: 0.28.0
+
+  react@19.3.0: {}
+
   readable-stream@3.6.2:
     dependencies:
       inherits: 2.0.4
@@ -3953,6 +4051,8 @@ snapshots:
     dependencies:
       xmlchars: 2.2.0
     optional: true
+
+  scheduler@0.28.0: {}
 
   semver@6.3.1: {}
 
@@ -4155,8 +4255,6 @@ snapshots:
       xml-name-validator: 4.0.0
     optional: true
 
-  webfontloader@1.6.28: {}
-
   webidl-conversions@3.0.1:
     optional: true
 
@@ -4219,9 +4317,6 @@ snapshots:
       strip-ansi: 6.0.1
 
   wrappy@1.0.2:
-    optional: true
-
-  ws@8.20.0:
     optional: true
 
   ws@8.20.1: {}
