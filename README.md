@@ -33,7 +33,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 ```bash
 git clone https://github.com/clawnify/OpenDesign.git
-cd open-design
+cd OpenDesign
 pnpm install
 pnpm run dev
 ```
@@ -49,6 +49,7 @@ http://localhost:5178/?agent=true
 ```
 
 This activates an agent-friendly UI with:
+
 - Explicit buttons always visible (no hover-to-reveal)
 - Large click targets for reliable browser automation
 - All controls accessible without drag interactions
@@ -58,16 +59,20 @@ This activates an agent-friendly UI with:
 
 Claude Code can interact with the design editor through the REST API:
 
+#### Create a new design
 ```bash
-# Create a new design
 curl -X POST http://localhost:3006/api/designs \
   -H "Content-Type: application/json" \
   -d '{"name": "Q1 Results", "width": 1080, "height": 1080}'
+```
 
-# Load a template
+#### Load a template
+``` bash
 curl http://localhost:3006/api/templates/1
+```
 
-# Update design with canvas JSON
+#### Update design with canvas JSON
+```bash
 curl -X PUT http://localhost:3006/api/designs/1 \
   -H "Content-Type: application/json" \
   -d '{"canvas_json": "{...}"}'
@@ -77,14 +82,14 @@ OpenClaw agents can also use the browser tool to visually interact with the edit
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Preact, TypeScript, Tailwind CSS v4, Vite |
-| **Canvas** | Fabric.js v6 (retina rendering, object manipulation) |
-| **Backend** | Hono, Node.js |
-| **Database** | SQLite (better-sqlite3) |
-| **Fonts** | Google Fonts (WebFontLoader) |
-| **Icons** | Lucide |
+| Layer        | Technology                                           |
+| ------------ | ---------------------------------------------------- |
+| **Frontend** | Preact, TypeScript, Tailwind CSS v4, Vite            |
+| **Canvas**   | Fabric.js v6 (retina rendering, object manipulation) |
+| **Backend**  | Hono, Node.js                                        |
+| **Database** | SQLite (better-sqlite3)                              |
+| **Fonts**    | Google Fonts (WebFontLoader)                         |
+| **Icons**    | Lucide                                               |
 
 ### Prerequisites
 
@@ -128,17 +133,17 @@ templates (id, name, category, canvas_json, width, height, thumbnail_url, sort_o
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/designs` | List all designs |
-| POST | `/api/designs` | Create a design |
-| GET | `/api/designs/:id` | Get a design |
-| PUT | `/api/designs/:id` | Update a design |
-| DELETE | `/api/designs/:id` | Delete a design |
-| GET | `/api/templates` | List all templates |
-| GET | `/api/templates/:id` | Get a template |
-| POST | `/api/uploads` | Upload an image file |
-| GET | `/api/uploads/:filename` | Serve an uploaded image |
+| Method | Endpoint                 | Description             |
+| ------ | ------------------------ | ----------------------- |
+| GET    | `/api/designs`           | List all designs        |
+| POST   | `/api/designs`           | Create a design         |
+| GET    | `/api/designs/:id`       | Get a design            |
+| PUT    | `/api/designs/:id`       | Update a design         |
+| DELETE | `/api/designs/:id`       | Delete a design         |
+| GET    | `/api/templates`         | List all templates      |
+| GET    | `/api/templates/:id`     | Get a template          |
+| POST   | `/api/uploads`           | Upload an image file    |
+| GET    | `/api/uploads/:filename` | Serve an uploaded image |
 
 ## Community & Contributions
 
