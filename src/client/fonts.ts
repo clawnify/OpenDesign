@@ -50,6 +50,9 @@ const FAMILIES: Record<string, number[]> = {
   Merriweather: [400, 700],
 };
 
+/** The bundled canvas fonts, and the only ones offered anywhere. */
+export const FONT_FAMILIES = Object.keys(FAMILIES);
+
 /** Start loading every canvas font. The canvas draws text with whatever is loaded. */
 export function loadFonts(): void {
   for (const [family, weights] of Object.entries(FAMILIES)) {

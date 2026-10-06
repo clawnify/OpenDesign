@@ -16,18 +16,38 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 ## Features
 
+- **Template fields** — name any text or image object, then fill it from data or an agent over the API; one name can drive several objects and pages at once
 - **Fabric.js canvas** — full object manipulation with retina/HiDPI rendering (2x device pixel ratio)
 - **Pre-built templates** — LinkedIn-optimized: Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text
 - **10 Google Fonts** — Inter, Playfair Display, Montserrat, Poppins, Roboto, Open Sans, Lora, Raleway, Source Sans Pro, Merriweather
 - **Text editing** — font family, size, weight, alignment, color, line height, letter spacing
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
 - **Image uploads** — drag-and-drop or click to upload, place on canvas
+- **Brand kits** — save a palette, a heading/body font pair and your logos, then apply them to any design in one click. Brand swatches appear wherever you pick a color. Kits export and import as plain JSON, so a kit moves between installs or over to a client instead of being stranded in one account
 - **Backgrounds** — solid colors, gradients, uploaded images
-- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
+- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Carousel (1080x1350), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
 - **Undo/Redo** — full history with keyboard shortcuts (Cmd+Z / Cmd+Shift+Z)
-- **2x PNG export** — crisp high-resolution output for social media
+- **Carousel PDF export**: every page in one multi-page PDF, the only format LinkedIn accepts for a swipeable carousel
+- **2x PNG export**: this page or every page, at exactly 2x the design size on any display
 - **Auto-save** — designs persist to SQLite with debounced saves
 - **Dual-mode UI** — human-optimized + AI-agent-optimized (`?agent=true`)
+
+## Carousels
+
+A swipeable carousel on LinkedIn is a **document post**. LinkedIn's own help pages
+document the format (PDF, DOC/DOCX or PPT/PPTX, up to 300 pages and 100 MB), and the
+short-lived native multi-image carousel it shipped in 2022 was removed in June 2023,
+with existing carousel posts deleted that December. Uploading a document is the way.
+
+OpenDesign builds one end to end: add a page per slide, then **Export → Carousel PDF**
+writes them all into a single file, in canvas order, at the slide's own aspect ratio.
+Upload that PDF to LinkedIn as a document.
+
+Format and limits per [LinkedIn Help: upload and share documents](https://www.linkedin.com/help/linkedin/answer/a518909).
+Note that *Carousel Ads* is a separate paid ads product, unrelated to this.
+
+Use the **LinkedIn Carousel** canvas size (1080x1350, 4:5). It takes up the most room
+on a phone screen. Exports are assembled in the browser, so nothing leaves the machine.
 
 ## Quickstart
 
@@ -38,7 +58,7 @@ pnpm install
 pnpm run dev
 ```
 
-Open `http://localhost:5178` in your browser. Data persists in `data.db`, uploads in `uploads/`.
+Open `http://localhost:5173` in your browser. Designs and uploads persist in the local D1 and R2 simulators under `.wrangler/`.
 
 ### Agent Mode (for OpenClaw / Claude Code)
 
@@ -99,9 +119,10 @@ demo/seed.sql   — Sample designs for the Clawnify demo workspace
 src/
   server/
     db.ts       — SQLite wrapper (query, get, run, transaction)
-    index.ts    — Hono REST API (designs CRUD, templates, uploads)
+    index.ts    — Hono REST API (designs CRUD, templates, fields, uploads)
+    fields.ts   — Template fields: read the fill schema, substitute values
     uploads.ts  — Image uploads in the app's R2 bucket
-    dev.ts      — Dev server with static file serving
+    seed-templates.ts — Starter templates, inserted on first request
   client/
     app.tsx           — Root component
     fonts.ts          — Bundled canvas fonts
@@ -111,7 +132,10 @@ src/
       use-designs.ts  — Designs CRUD + auto-save + template loading
     components/
       editor.tsx        — Main layout (toolbar + sidebars + canvas)
-      canvas.tsx        — Fabric.js canvas with retina rendering
+      home.tsx          — Home screen: templates and recent designs
+      canvas-area.tsx   — Scrollable area holding every page's canvas
+      page-canvas.tsx   — One page's Fabric.js canvas
+      pages-bar.tsx     — Add, rename, duplicate and delete pages
       toolbar.tsx       — Size picker, undo/redo, zoom, export, save
       left-sidebar.tsx  — Templates, text, shapes, images, backgrounds
       right-sidebar.tsx — Properties panel (context-aware per selection)
@@ -135,10 +159,76 @@ templates (id, name, category, canvas_json, width, height, thumbnail_url, sort_o
 | GET | `/api/designs/:id` | Get a design |
 | PUT | `/api/designs/:id` | Update a design |
 | DELETE | `/api/designs/:id` | Delete a design |
+| GET | `/api/designs/:id/fields` | List the design's fillable fields |
+| POST | `/api/designs/:id/fill` | Fill those fields with values |
 | GET | `/api/templates` | List all templates |
 | GET | `/api/templates/:id` | Get a template |
 | POST | `/api/uploads` | Upload an image file |
 | GET | `/api/uploads/:filename` | Serve an uploaded image |
+
+## Template Fields
+
+Design something once, then produce as many variants of it as you have rows of
+data — without anything on the outside having to understand canvas JSON.
+
+Select a text or image object in the editor and give it a **Field name** in the
+properties panel. That object is now a fill slot:
+
+```bash
+curl localhost:8787/api/designs/$ID/fields
+```
+
+```json
+[
+  { "name": "headline", "type": "text",  "value": "Your inspiring quote goes here", "page_ids": ["p1"] },
+  { "name": "logo",     "type": "image", "value": "https://.../old.png",            "page_ids": ["p1", "p2"] }
+]
+```
+
+Fill it. Text fields take a string (numbers are accepted and stringified),
+image fields take a URL:
+
+```bash
+curl -X POST localhost:8787/api/designs/$ID/fill \
+  -H 'content-type: application/json' \
+  -d '{"values": {"headline": "Q3 revenue up 40%", "logo": "https://.../new.png"}}'
+```
+
+The response carries the filled pages plus `filled` and `unmatched`, so a name
+that matches nothing is reported rather than failing the request. The stored
+design is left alone — add `"save": true` (and optionally `"name"`) to persist
+the result as a new design instead.
+
+### How far this scales today
+
+`save: true` writes a **new editable design**, not a rendered image, because
+there is no server-side rasterizer. That makes it the right tool for a handful
+of variants — an agent fills a card, opens it, exports it — and the wrong one
+for a spreadsheet:
+
+- Each saved variant is a row in `designs`, and `GET /api/designs` returns every
+  row with its full `canvas_json` and no pagination. A three-object card is
+  ~2.5 KB serialised; a branded design with an image is 10-40 KB. A few hundred
+  variants turn the gallery response into megabytes.
+- So a few hundred saved variants give you a few hundred gallery entries, not a
+  few hundred finished graphics.
+
+For real bulk output, drive `fill` without `save` and rasterize in the browser —
+the canvas is already there, and that loop is the missing piece rather than a
+server-side renderer. Until it exists, treat `save: true` as a small-N
+convenience.
+
+Worth knowing:
+
+- A field name may repeat. One `logo` across five pages fills all five, which is
+  what you want for a carousel.
+- What gets written depends on the object, not the declared type: text objects
+  take `text`, image objects take `src`.
+- A replacement image keeps the original object's box, so a different aspect
+  ratio will be stretched. Size the slot for the images you intend to feed it.
+- Only text and image objects can be fields. Naming a shape does nothing.
+- Rendering to PNG still happens in the browser — there is no server-side
+  rasterizer, because Workers have no canvas.
 
 ## Community & Contributions
 

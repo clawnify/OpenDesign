@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import type { Design, Template, Page } from "./types";
+import type { Design, Template, Page, BrandKit } from "./types";
 import type * as fabric from "fabric";
 import type { Dimensions } from "./resize";
 
@@ -13,6 +13,8 @@ export interface CanvasSize {
 
 export const CANVAS_SIZES: CanvasSize[] = [
   { group: "LinkedIn", label: "LinkedIn Square", width: 1080, height: 1080 },
+  // LinkedIn's recommended carousel slide. 4:5 fills the most phone screen.
+  { group: "LinkedIn", label: "LinkedIn Carousel", width: 1080, height: 1350 },
   { group: "LinkedIn", label: "LinkedIn Landscape", width: 1200, height: 627 },
   { group: "LinkedIn", label: "LinkedIn Portrait", width: 1200, height: 1500 },
   { group: "Instagram", label: "Instagram Portrait", width: 1080, height: 1350 },
@@ -60,7 +62,10 @@ export interface EditorContextValue {
   zoomToFit: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
-  exportPNG: () => void;
+  exportPNG: (designName: string) => void;
+  exportAllPNG: (pageIds: string[], designName: string) => void;
+  exportPDF: (pageIds: string[], designName: string) => Promise<void>;
+  exporting: boolean;
   getCanvasJSON: () => string;
   getCanvasJSONForPage: (pageId: string) => string;
   loadTemplate: (template: Template) => void;
@@ -88,6 +93,16 @@ export interface EditorContextValue {
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, title: string) => Promise<void>;
   switchToPage: (pageId: string) => void;
+
+  // Brand kits
+  brandKits: BrandKit[];
+  activeBrandKit: BrandKit | null;
+  activeBrandKitId: string | null;
+  setActiveBrandKitId: (id: string | null) => void;
+  createBrandKit: (input?: Partial<Omit<BrandKit, "id" | "created_at" | "updated_at">>) => Promise<BrandKit>;
+  updateBrandKit: (id: string, input: Partial<Omit<BrandKit, "id" | "created_at" | "updated_at">>) => Promise<void>;
+  deleteBrandKit: (id: string) => Promise<void>;
+  applyBrandKit: (kit: BrandKit) => void;
 
   // Templates
   templates: Template[];

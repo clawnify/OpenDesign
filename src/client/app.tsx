@@ -1,6 +1,7 @@
 import { EditorContext } from "./context";
 import { useCanvasState } from "./hooks/use-canvas";
 import { useDesigns } from "./hooks/use-designs";
+import { useBrandKits } from "./hooks/use-brand-kits";
 import { useRouter } from "./hooks/use-router";
 import { Editor } from "./components/editor";
 import { Home } from "./components/home";
@@ -12,6 +13,7 @@ export function App() {
   const { path, navigate, designId } = useRouter();
   const canvasState = useCanvasState();
   const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize);
+  const brandState = useBrandKits();
 
   useEffect(() => {
     loadFonts();
@@ -104,6 +106,7 @@ export function App() {
   const contextValue = {
     ...canvasState,
     ...designState,
+    ...brandState,
     // activeCanvasId is the source of truth for which page is active
     activePageId: canvasState.activeCanvasId ?? designState.activePageId,
     navigate,

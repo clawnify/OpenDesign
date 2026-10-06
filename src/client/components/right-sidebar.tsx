@@ -13,19 +13,78 @@ import {
 } from "lucide-preact";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
+import { FONT_FAMILIES } from "../fonts";
 
-const FONT_FAMILIES = [
-  "Inter",
-  "Playfair Display",
-  "Montserrat",
-  "Poppins",
-  "Roboto",
-  "Open Sans",
-  "Lora",
-  "Raleway",
-  "Source Sans Pro",
-  "Merriweather",
-];
+/**
+ * The active kit's colours, offered wherever a colour is chosen. This is what
+ * "on brand" means day to day: the brand palette is one click away at the
+ * moment of picking, not a page you have to remember to visit.
+ */
+function BrandSwatches({ onPick }: { onPick: (color: string) => void }) {
+  const { activeBrandKit } = useEditor();
+  if (!activeBrandKit || activeBrandKit.colors.length === 0) return null;
+  return (
+    <div class="flex flex-wrap gap-1 mt-1.5">
+      {activeBrandKit.colors.map((color, i) => (
+        <button
+          key={`${color}-${i}`}
+          class="w-5 h-5 rounded border border-zinc-300 cursor-pointer transition-all hover:scale-110 hover:border-accent"
+          style={{ background: color }}
+          title={`${activeBrandKit.name} — ${color}`}
+          aria-label={`Use brand color ${color}`}
+          onClick={() => onPick(color)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Names an object so `/api/designs/:id/fields` publishes it and
+ * `/api/designs/:id/fill` can write to it. Committed on blur rather than per
+ * keystroke, so naming a field costs one undo step instead of one per letter.
+ */
+function FieldNameInput({
+  object,
+  onCommit,
+}: {
+  object: fabric.FabricObject;
+  onCommit: (name: string) => void;
+}) {
+  const saved = ((object as any).fieldName as string) || "";
+  const [draft, setDraft] = useState(saved);
+
+  // Re-seed when the selection moves to a different object.
+  useEffect(() => setDraft(saved), [object]);
+
+  const commit = () => {
+    const next = draft.trim();
+    if (next !== saved) onCommit(next);
+    setDraft(next);
+  };
+
+  return (
+    <div>
+      <label class="text-[11px] text-zinc-400 mb-1 block">Field name</label>
+      <input
+        type="text"
+        placeholder="e.g. headline"
+        class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent font-mono"
+        value={draft}
+        onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+      />
+      <p class="text-[10px] text-zinc-400 mt-1 leading-snug">
+        {saved
+          ? "Fillable through the design's /fill endpoint."
+          : "Name it to fill it from data or an agent."}
+      </p>
+    </div>
+  );
+}
 
 export function RightSidebar() {
   const { selectedObject, updateSelectedObject, deleteSelected, canvas, setBackground, canvasWidth, canvasHeight } =
@@ -52,6 +111,7 @@ export function RightSidebar() {
             class="w-full h-8 rounded-md border border-zinc-300 cursor-pointer bg-transparent"
             onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
           />
+          <BrandSwatches onPick={(color) => setBackground("color", color)} />
         </div>
       </aside>
     );
@@ -89,6 +149,14 @@ export function RightSidebar() {
       </div>
 
       <div class="p-4 flex flex-col gap-4">
+        {/* ── Template field ────────────────────────────────────────── */}
+        {(isText || isImage) && (
+          <FieldNameInput
+            object={selectedObject}
+            onCommit={(fieldName) => updateSelectedObject({ fieldName })}
+          />
+        )}
+
         {/* ── Text properties ───────────────────────────────────────── */}
         {isText && (
           <>
@@ -220,6 +288,7 @@ export function RightSidebar() {
                   }
                 />
               </div>
+              <BrandSwatches onPick={(color) => updateSelectedObject({ fill: color })} />
             </div>
 
             {/* Line height */}
@@ -290,6 +359,7 @@ export function RightSidebar() {
                   }
                 />
               </div>
+              <BrandSwatches onPick={(color) => updateSelectedObject({ fill: color })} />
             </div>
 
             {/* Stroke */}

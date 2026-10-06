@@ -2,6 +2,7 @@ import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
 import { initUploads, putUpload, getUpload } from "./uploads.js";
 import { SEED_TEMPLATES } from "./seed-templates.js";
+import { collectFields, fillPages } from "./fields.js";
 
 type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
 
@@ -218,6 +219,148 @@ app.openapi(deleteDesign, async (c) => {
   return c.json({ ok: true }, 200);
 });
 
+// ── Template fields ─────────────────────────────────────────────────
+//
+// A design becomes a template the moment any object carries a `fieldName`.
+// `/fields` publishes the schema so a caller knows what it can fill; `/fill`
+// substitutes values without touching the stored design, or writes the result
+// as a new design when `save` is set. Together they cover "generate N variants
+// from a row of data" without the caller ever parsing canvas JSON.
+
+const FieldSchema = z.object({
+  name: z.string(),
+  type: z.enum(["text", "image"]),
+  value: z.string(),
+  page_ids: z.array(z.string()),
+});
+
+const listFields = createRoute({
+  method: "get",
+  path: "/api/designs/{id}/fields",
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: { content: { "application/json": { schema: z.array(FieldSchema) } }, description: "OK" },
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+app.openapi(listFields, async (c) => {
+  const { id } = c.req.valid("param");
+  const design = await get<{ id: string }>("SELECT id FROM designs WHERE id = ?", [id]);
+  if (!design) return c.json({ error: "Not found" }, 404);
+  const pages = await query<z.infer<typeof PageSchema>>(
+    "SELECT * FROM pages WHERE design_id = ? ORDER BY sort_order",
+    [id]
+  );
+  return c.json(collectFields(pages), 200);
+});
+
+// ── Fill a design ───────────────────────────────────────────────────
+
+const FilledPageSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  sort_order: z.number(),
+  canvas_json: z.string(),
+});
+
+const FillResponseSchema = z.object({
+  design: DesignSchema,
+  pages: z.array(FilledPageSchema),
+  filled: z.array(z.string()),
+  unmatched: z.array(z.string()),
+});
+
+const fillDesign = createRoute({
+  method: "post",
+  path: "/api/designs/{id}/fill",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            values: z.record(z.union([z.string(), z.number()])),
+            // Persist the result as a new design instead of only returning it.
+            save: z.boolean().optional(),
+            name: z.string().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { content: { "application/json": { schema: FillResponseSchema } }, description: "OK" },
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+app.openapi(fillDesign, async (c) => {
+  const { id } = c.req.valid("param");
+  const { values, save, name } = c.req.valid("json");
+
+  const design = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [id]);
+  if (!design) return c.json({ error: "Not found" }, 404);
+
+  const pages = await query<z.infer<typeof PageSchema>>(
+    "SELECT * FROM pages WHERE design_id = ? ORDER BY sort_order",
+    [id]
+  );
+
+  // Numbers are the common case for stat cards, so accept them and stringify
+  // rather than making every caller do it.
+  const strings = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v)]));
+  const { pages: filledPages, filled, unmatched } = fillPages(pages, strings);
+
+  const body = filledPages.map((p) => ({
+    id: p.id,
+    title: p.title,
+    sort_order: p.sort_order,
+    canvas_json: p.canvas_json,
+  }));
+
+  if (!save) return c.json({ design, pages: body, filled, unmatched }, 200);
+
+  // Ids are generated here rather than by the column default so the new rows
+  // can be linked without a racy "most recently created" lookup.
+  const newDesignId = crypto.randomUUID();
+  await run(
+    "INSERT INTO designs (id, name, canvas_json, width, height) VALUES (?, ?, ?, ?, ?)",
+    [
+      newDesignId,
+      name || `${design.name} (filled)`,
+      // designs.canvas_json mirrors page 1, matching what the editor writes.
+      filledPages[0]?.canvas_json ?? design.canvas_json,
+      design.width,
+      design.height,
+    ]
+  );
+
+  const createdPages = filledPages.map((p) => ({ ...p, id: crypto.randomUUID() }));
+  for (const p of createdPages) {
+    await run(
+      "INSERT INTO pages (id, design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?, ?)",
+      [p.id, newDesignId, p.title, p.canvas_json, p.sort_order]
+    );
+  }
+
+  const created = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [newDesignId]);
+  return c.json(
+    {
+      design: created!,
+      pages: createdPages.map((p) => ({
+        id: p.id,
+        title: p.title,
+        sort_order: p.sort_order,
+        canvas_json: p.canvas_json,
+      })),
+      filled,
+      unmatched,
+    },
+    200
+  );
+});
+
 // ── Add page ───────────────────────────────────────────────────────
 
 const addPage = createRoute({
@@ -383,6 +526,134 @@ app.openapi(getTemplate, async (c) => {
   const row = await get<z.infer<typeof TemplateSchema>>("SELECT * FROM templates WHERE id = ?", [id]);
   if (!row) return c.json({ error: "Not found" }, 404);
   return c.json(row, 200);
+});
+
+// ── Brand kits ──────────────────────────────────────────────────────
+
+// A brand kit is the colors / fonts / logos a team reuses across every design.
+// It is deliberately a plain, self-describing shape: the JSON the API returns is
+// exactly what "Export kit" writes to disk and what "Import kit" POSTs back, so a
+// kit can move between OpenDesign installs without anyone rebuilding it by hand.
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+const BrandKitBodySchema = z.object({
+  name: z.string().min(1).max(80),
+  colors: z.array(z.string().regex(HEX)).max(24),
+  heading_font: z.string().min(1).max(60),
+  body_font: z.string().min(1).max(60),
+  logos: z.array(z.string().max(2048)).max(12),
+});
+
+const BrandKitSchema = BrandKitBodySchema.extend({
+  id: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+// Rows keep the list columns as TEXT; the API speaks real arrays.
+interface BrandKitRow {
+  id: string;
+  name: string;
+  colors: string;
+  heading_font: string;
+  body_font: string;
+  logos: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function parseList(raw: string): string[] {
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function toBrandKit(row: BrandKitRow): z.infer<typeof BrandKitSchema> {
+  return { ...row, colors: parseList(row.colors), logos: parseList(row.logos) };
+}
+
+const listBrandKits = createRoute({
+  method: "get",
+  path: "/api/brand-kits",
+  responses: { 200: { content: { "application/json": { schema: z.array(BrandKitSchema) } }, description: "OK" } },
+});
+
+app.openapi(listBrandKits, async (c) => {
+  const rows = await query<BrandKitRow>("SELECT * FROM brand_kits ORDER BY created_at");
+  return c.json(rows.map(toBrandKit), 200);
+});
+
+const createBrandKit = createRoute({
+  method: "post",
+  path: "/api/brand-kits",
+  request: { body: { content: { "application/json": { schema: BrandKitBodySchema.partial() } } } },
+  responses: { 200: { content: { "application/json": { schema: BrandKitSchema } }, description: "OK" } },
+});
+
+app.openapi(createBrandKit, async (c) => {
+  const b = c.req.valid("json");
+  await run(
+    "INSERT INTO brand_kits (name, colors, heading_font, body_font, logos) VALUES (?, ?, ?, ?, ?)",
+    [
+      b.name ?? "My Brand",
+      JSON.stringify(b.colors ?? []),
+      b.heading_font ?? "Montserrat",
+      b.body_font ?? "Inter",
+      JSON.stringify(b.logos ?? []),
+    ]
+  );
+  const row = await get<BrandKitRow>("SELECT * FROM brand_kits ORDER BY created_at DESC, rowid DESC LIMIT 1");
+  return c.json(toBrandKit(row!), 200);
+});
+
+const updateBrandKit = createRoute({
+  method: "put",
+  path: "/api/brand-kits/{id}",
+  request: {
+    params: z.object({ id: z.string() }),
+    body: { content: { "application/json": { schema: BrandKitBodySchema.partial() } } },
+  },
+  responses: {
+    200: { content: { "application/json": { schema: BrandKitSchema } }, description: "OK" },
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+app.openapi(updateBrandKit, async (c) => {
+  const { id } = c.req.valid("param");
+  const b = c.req.valid("json");
+  const existing = await get<BrandKitRow>("SELECT * FROM brand_kits WHERE id = ?", [id]);
+  if (!existing) return c.json({ error: "Not found" }, 404);
+  await run(
+    `UPDATE brand_kits SET name = ?, colors = ?, heading_font = ?, body_font = ?, logos = ?, updated_at = datetime('now') WHERE id = ?`,
+    [
+      b.name ?? existing.name,
+      b.colors ? JSON.stringify(b.colors) : existing.colors,
+      b.heading_font ?? existing.heading_font,
+      b.body_font ?? existing.body_font,
+      b.logos ? JSON.stringify(b.logos) : existing.logos,
+      id,
+    ]
+  );
+  const row = await get<BrandKitRow>("SELECT * FROM brand_kits WHERE id = ?", [id]);
+  return c.json(toBrandKit(row!), 200);
+});
+
+const deleteBrandKit = createRoute({
+  method: "delete",
+  path: "/api/brand-kits/{id}",
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { content: { "application/json": { schema: z.object({ ok: z.boolean() }) } }, description: "OK" } },
+});
+
+app.openapi(deleteBrandKit, async (c) => {
+  const { id } = c.req.valid("param");
+  await run("DELETE FROM brand_kits WHERE id = ?", [id]);
+  return c.json({ ok: true }, 200);
 });
 
 // ── File uploads ────────────────────────────────────────────────────
