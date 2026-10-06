@@ -24,11 +24,29 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
 - **Image uploads** — drag-and-drop or click to upload, place on canvas
 - **Backgrounds** — solid colors, gradients, uploaded images
-- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
+- **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Carousel (1080x1350), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
 - **Undo/Redo** — full history with keyboard shortcuts (Cmd+Z / Cmd+Shift+Z)
-- **2x PNG export** — crisp high-resolution output for social media
+- **Carousel PDF export**: every page in one multi-page PDF, the only format LinkedIn accepts for a swipeable carousel
+- **2x PNG export**: this page or every page, at exactly 2x the design size on any display
 - **Auto-save** — designs persist to SQLite with debounced saves
 - **Dual-mode UI** — human-optimized + AI-agent-optimized (`?agent=true`)
+
+## Carousels
+
+A swipeable carousel on LinkedIn is a **document post**. LinkedIn's own help pages
+document the format (PDF, DOC/DOCX or PPT/PPTX, up to 300 pages and 100 MB), and the
+short-lived native multi-image carousel it shipped in 2022 was removed in June 2023,
+with existing carousel posts deleted that December. Uploading a document is the way.
+
+OpenDesign builds one end to end: add a page per slide, then **Export → Carousel PDF**
+writes them all into a single file, in canvas order, at the slide's own aspect ratio.
+Upload that PDF to LinkedIn as a document.
+
+Format and limits per [LinkedIn Help: upload and share documents](https://www.linkedin.com/help/linkedin/answer/a518909).
+Note that *Carousel Ads* is a separate paid ads product, unrelated to this.
+
+Use the **LinkedIn Carousel** canvas size (1080x1350, 4:5). It takes up the most room
+on a phone screen. Exports are assembled in the browser, so nothing leaves the machine.
 
 ## Quickstart
 
@@ -39,7 +57,7 @@ pnpm install
 pnpm run dev
 ```
 
-Open `http://localhost:5178` in your browser. Data persists in `data.db`, uploads in `uploads/`.
+Open `http://localhost:5173` in your browser. Designs and uploads persist in the local D1 and R2 simulators under `.wrangler/`.
 
 ### Agent Mode (for OpenClaw / Claude Code)
 
@@ -103,7 +121,7 @@ src/
     index.ts    — Hono REST API (designs CRUD, templates, fields, uploads)
     fields.ts   — Template fields: read the fill schema, substitute values
     uploads.ts  — Image uploads in the app's R2 bucket
-    dev.ts      — Dev server with static file serving
+    seed-templates.ts — Starter templates, inserted on first request
   client/
     app.tsx           — Root component
     fonts.ts          — Bundled canvas fonts
@@ -113,7 +131,10 @@ src/
       use-designs.ts  — Designs CRUD + auto-save + template loading
     components/
       editor.tsx        — Main layout (toolbar + sidebars + canvas)
-      canvas.tsx        — Fabric.js canvas with retina rendering
+      home.tsx          — Home screen: templates and recent designs
+      canvas-area.tsx   — Scrollable area holding every page's canvas
+      page-canvas.tsx   — One page's Fabric.js canvas
+      pages-bar.tsx     — Add, rename, duplicate and delete pages
       toolbar.tsx       — Size picker, undo/redo, zoom, export, save
       left-sidebar.tsx  — Templates, text, shapes, images, backgrounds
       right-sidebar.tsx — Properties panel (context-aware per selection)
