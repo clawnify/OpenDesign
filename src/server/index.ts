@@ -1,11 +1,51 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
-import { putUpload, getUpload } from "./uploads.js";
+import { initUploads, putUpload, getUpload } from "./uploads.js";
+import { SEED_TEMPLATES } from "./seed-templates.js";
 import { collectFields, fillPages } from "./fields.js";
 
-type Env = { Bindings: { DB: D1Database } };
+type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
+
+// ── Starter templates ───────────────────────────────────────────────
+//
+// schema.sql is applied as DDL only by the Clawnify deploy pipeline, so the
+// starter templates cannot be seeded there. They are inserted here instead,
+// once per isolate, on the first request that reaches the app.
+//
+// Seeded only while the table is empty — the semantics the old schema.sql
+// comment described. INSERT OR IGNORE alone is not enough: a row the user
+// deleted no longer conflicts, so it would come back on the next cold isolate.
+// The count guard keeps a deletion deleted; INSERT OR IGNORE on the explicit
+// id keeps an edit intact and makes two concurrent cold requests harmless.
+// Failures are swallowed — sample data must never turn into a failed request.
+
+let seeded = false;
+
+async function ensureSeeded() {
+  if (seeded) return;
+  seeded = true;
+  try {
+    const existing = await get<{ c: number }>("SELECT COUNT(*) as c FROM templates");
+    if ((existing?.c ?? 0) > 0) return;
+    for (const t of SEED_TEMPLATES) {
+      await run(
+        "INSERT OR IGNORE INTO templates (id, name, category, canvas_json, width, height, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [t.id, t.name, t.category, t.canvas_json, t.width, t.height, t.sort_order]
+      );
+    }
+  } catch {
+    seeded = false;
+  }
+}
+
+// Runs after createApp's own initDB middleware, so the DB is ready here.
+app.use("*", async (c, next) => {
+  initUploads(c.env.UPLOADS);
+  await ensureSeeded();
+  await next();
+});
 
 // ── Schemas ──────────────────────────────────────────────────────────
 
@@ -107,11 +147,12 @@ const createDesign = createRoute({
 app.openapi(createDesign, async (c) => {
   const { name, canvas_json, width, height } = c.req.valid("json");
   const canvasData = canvas_json || "{}";
-  await run(
-    "INSERT INTO designs (name, canvas_json, width, height) VALUES (?, ?, ?, ?)",
+  // RETURNING hands back the row just inserted; "newest by created_at" can pick
+  // another design created in the same second.
+  const row = await get<z.infer<typeof DesignSchema>>(
+    "INSERT INTO designs (name, canvas_json, width, height) VALUES (?, ?, ?, ?) RETURNING *",
     [name || "Untitled Design", canvasData, width || 1080, height || 1080]
   );
-  const row = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs ORDER BY created_at DESC LIMIT 1");
   // Auto-create first page
   await run(
     "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?)",
@@ -360,11 +401,10 @@ app.openapi(addPage, async (c) => {
     insertOrder = (maxOrder?.m ?? -1) + 1;
   }
 
-  await run(
-    "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?)",
+  const page = await get<z.infer<typeof PageSchema>>(
+    "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?) RETURNING *",
     [id, title, body.canvas_json || "{}", insertOrder]
   );
-  const page = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE design_id = ? ORDER BY created_at DESC LIMIT 1", [id]);
   return c.json(page!, 200);
 });
 
@@ -517,7 +557,14 @@ app.get("/api/uploads/:filename", async (c) => {
   if (!result) return c.json({ error: "Not found" }, 404);
 
   return new Response(result.data, {
-    headers: { "Content-Type": result.contentType, "Cache-Control": "public, max-age=31536000" },
+    headers: {
+      "Content-Type": result.contentType,
+      "Cache-Control": "public, max-age=31536000",
+      // Uploads include SVG, which can carry script. Opened directly, the file
+      // must not run as a page on the app's origin; <img> and canvas are unaffected.
+      "Content-Security-Policy": "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'",
+      "X-Content-Type-Options": "nosniff",
+    },
   });
 });
 
