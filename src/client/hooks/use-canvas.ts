@@ -591,7 +591,7 @@ export function useCanvasState() {
 
       canvas.requestRenderAll();
       saveHistory(pageId);
-      setSelectedObject((prev) => (prev ? ({ ...prev } as fabric.FabricObject) : null));
+      bumpSelection();
     },
     [getActiveCanvas, saveHistory]
   );
