@@ -6,3 +6,4 @@ data.db-shm
 uploads/
 .env
 .wrangler/
+.test-build/

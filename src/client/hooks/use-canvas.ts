@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import * as fabric from "fabric";
 import type { Template, BrandKit } from "../types";
 import { buildColorMap, brandFontFor, isHex } from "../lib/brand";
+import { downloadDataURL, exportPagesToPDF, renderPageToPNG, slugify } from "../lib/export";
 
 const MAX_HISTORY = 50;
 
@@ -33,6 +34,7 @@ export function useCanvasState() {
   const [canvasHeight, setCanvasHeight] = useState(1080);
   const [zoom, setZoom] = useState(0.58);
   const [fitScale, setFitScale] = useState(0.58);
+  const [exporting, setExporting] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const isRestoringRef = useRef<Set<string>>(new Set());
@@ -277,6 +279,14 @@ export function useCanvasState() {
 
   // ── Object manipulation ─────────────────────────────────────────────
 
+  // Editing a property mutates the live Fabric object, which React can't see.
+  // This counter is what re-renders the sidebar. Spreading the object into a
+  // new one would also re-render, but it strips the prototype — and in Fabric
+  // v6 that takes `.set()` and the `type` getter with it, so the panel would
+  // mistake a textbox for a shape and the next edit would throw.
+  const [, setSelectionVersion] = useState(0);
+  const bumpSelection = () => setSelectionVersion((v) => v + 1);
+
   const updateSelectedObject = useCallback(
     (props: Record<string, unknown>) => {
       const canvas = getActiveCanvas();
@@ -285,7 +295,7 @@ export function useCanvasState() {
       selectedObject.set(props as Partial<fabric.FabricObject>);
       canvas.requestRenderAll();
       saveHistory(pageId);
-      setSelectedObject({ ...selectedObject } as fabric.FabricObject);
+      bumpSelection();
     },
     [getActiveCanvas, selectedObject, saveHistory]
   );
@@ -371,29 +381,56 @@ export function useCanvasState() {
 
   // ── Export ──────────────────────────────────────────────────────────
 
-  const exportPNG = useCallback(() => {
-    const canvas = getActiveCanvas();
-    if (!canvas) return;
-    const activeObj = canvas.getActiveObject();
-    canvas.discardActiveObject();
-    canvas.requestRenderAll();
+  // Page ids come from the design, which owns their order. A Map has none.
+  const canvasesForPages = useCallback(
+    (pageIds: string[]) =>
+      pageIds
+        .map((id) => canvasMapRef.current.get(id))
+        .filter((c): c is fabric.Canvas => Boolean(c)),
+    []
+  );
 
-    const dataURL = canvas.toDataURL({
-      format: "png",
-      multiplier: 2,
-      quality: 1,
-    });
+  const exportPNG = useCallback(
+    (designName: string) => {
+      const canvas = getActiveCanvas();
+      if (!canvas) return;
+      downloadDataURL(renderPageToPNG(canvas), `${slugify(designName)}.png`);
+    },
+    [getActiveCanvas]
+  );
 
-    const link = document.createElement("a");
-    link.download = "design.png";
-    link.href = dataURL;
-    link.click();
+  const exportAllPNG = useCallback(
+    (pageIds: string[], designName: string) => {
+      const canvases = canvasesForPages(pageIds);
+      const slug = slugify(designName);
+      // Ceiling: one download per page, staggered. Browsers drop downloads fired
+      // in the same tick, and prompt once for a burst. Fine for the 5-20 slides a
+      // social carousel runs to. If designs ever get long enough for that to be a
+      // nuisance, zip them (fflate is already in the tree under jspdf) rather than
+      // adding a dependency. The editor mounts every page's canvas at once, so it
+      // runs out of memory well before this does.
+      canvases.forEach((canvas, i) => {
+        setTimeout(() => downloadDataURL(renderPageToPNG(canvas), `${slug}-${i + 1}.png`), i * 250);
+      });
+    },
+    [canvasesForPages]
+  );
 
-    if (activeObj) {
-      canvas.setActiveObject(activeObj);
-      canvas.requestRenderAll();
-    }
-  }, [getActiveCanvas]);
+  const exportPDF = useCallback(
+    async (pageIds: string[], designName: string) => {
+      const canvases = canvasesForPages(pageIds);
+      if (canvases.length === 0) return;
+      setExporting(true);
+      try {
+        await exportPagesToPDF(canvases, canvasWidth, canvasHeight, `${slugify(designName)}.pdf`);
+      } catch (e) {
+        console.error("Failed to export PDF:", e);
+      } finally {
+        setExporting(false);
+      }
+    },
+    [canvasesForPages, canvasWidth, canvasHeight]
+  );
 
   // ── Serialization ───────────────────────────────────────────────────
 
@@ -545,6 +582,9 @@ export function useCanvasState() {
     zoomIn,
     zoomOut,
     exportPNG,
+    exportAllPNG,
+    exportPDF,
+    exporting,
     getCanvasJSON,
     getCanvasJSONForPage,
     loadTemplate,
