@@ -56,7 +56,7 @@ pnpm install
 pnpm run dev
 ```
 
-Open `http://localhost:5178` in your browser. Data persists in `data.db`, uploads in `uploads/`.
+Open `http://localhost:5173` in your browser. Designs and uploads persist in the local D1 and R2 simulators under `.wrangler/`.
 
 ### Agent Mode (for OpenClaw / Claude Code)
 
@@ -119,7 +119,7 @@ src/
     db.ts       — SQLite wrapper (query, get, run, transaction)
     index.ts    — Hono REST API (designs CRUD, templates, uploads)
     uploads.ts  — Image uploads in the app's R2 bucket
-    dev.ts      — Dev server with static file serving
+    seed-templates.ts — Starter templates, inserted on first request
   client/
     app.tsx           — Root component
     fonts.ts          — Bundled canvas fonts
@@ -129,7 +129,10 @@ src/
       use-designs.ts  — Designs CRUD + auto-save + template loading
     components/
       editor.tsx        — Main layout (toolbar + sidebars + canvas)
-      canvas.tsx        — Fabric.js canvas with retina rendering
+      home.tsx          — Home screen: templates and recent designs
+      canvas-area.tsx   — Scrollable area holding every page's canvas
+      page-canvas.tsx   — One page's Fabric.js canvas
+      pages-bar.tsx     — Add, rename, duplicate and delete pages
       toolbar.tsx       — Size picker, undo/redo, zoom, export, save
       left-sidebar.tsx  — Templates, text, shapes, images, backgrounds
       right-sidebar.tsx — Properties panel (context-aware per selection)
