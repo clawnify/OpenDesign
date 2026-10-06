@@ -1,8 +1,8 @@
 allowBuilds:
-  canvas: set this to true or false
-  esbuild: set this to true or false
-  sharp: set this to true or false
-  workerd: set this to true or false
+  canvas: false
+  esbuild: true
+  sharp: false
+  workerd: true
 minimumReleaseAgeExclude:
   # First-party Clawnify package — exempt from the new-release age gate so app
   # builds pick up fresh versions promptly.
