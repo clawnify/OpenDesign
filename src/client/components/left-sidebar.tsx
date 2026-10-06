@@ -145,12 +145,18 @@ export function LeftSidebar() {
               <div class="flex-1 overflow-y-auto px-3 pb-3">
                 {activeSection === "templates" && (
                   <div>
-                    <p class="text-zinc-400 text-[11px] mb-3">Click a template to apply</p>
-                    <div class="grid grid-cols-2 gap-2">
-                      {templates.map((t) => (
-                        <TemplateCard key={t.id} template={t} onClick={() => loadTemplate(t)} />
-                      ))}
-                    </div>
+                    {templates.length === 0 ? (
+                      <p class="text-zinc-400 text-[11px]">No templates yet.</p>
+                    ) : (
+                      <>
+                        <p class="text-zinc-400 text-[11px] mb-3">Click a template to apply</p>
+                        <div class="grid grid-cols-2 gap-2">
+                          {templates.map((t) => (
+                            <TemplateCard key={t.id} template={t} onClick={() => loadTemplate(t)} />
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
