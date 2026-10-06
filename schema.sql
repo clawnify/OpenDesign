@@ -34,6 +34,19 @@ CREATE INDEX IF NOT EXISTS idx_pages_design ON pages(design_id);
 
 CREATE INDEX IF NOT EXISTS idx_templates_category ON templates(category);
 
+CREATE TABLE IF NOT EXISTS brand_kits (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6)))),
+  name TEXT NOT NULL DEFAULT 'My Brand',
+  -- JSON arrays/objects, kept as TEXT so the whole kit round-trips through
+  -- export/import as one portable blob.
+  colors TEXT NOT NULL DEFAULT '[]',
+  heading_font TEXT NOT NULL DEFAULT 'Montserrat',
+  body_font TEXT NOT NULL DEFAULT 'Inter',
+  logos TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Starter templates are NOT seeded here. Clawnify applies this file as DDL
 -- only — any non-DDL statement (INSERT, UPDATE, PRAGMA, ...) fails the whole
 -- deploy — so the template rows live in src/server/seed-templates.ts and are

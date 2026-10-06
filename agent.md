@@ -6,6 +6,8 @@ A design editor for creating professional social media graphics, especially Link
 - Fabric.js-based canvas editor with drag-and-drop
 - Pre-built LinkedIn post templates (Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text)
 - Text editing with Google Fonts (Inter, Montserrat, Playfair Display)
+- Brand kits — palette, heading/body fonts and logos, applied to a design in one
+  step and portable between installs as JSON (`/api/brand-kits`)
 - Image uploads and placement
 - Multiple canvas sizes (1080x1080 square, 1080x1350 carousel, 1200x627 landscape)
 - Multi-page designs exported as one PDF, which is how a LinkedIn carousel is published
@@ -41,3 +43,4 @@ Use this template when the user wants to:
 - Build a simple graphic design tool
 - Create branded visual content
 - Generate on-brand variants of one design by filling it with data
+- Keep a team or client on-brand across every graphic (brand kit)
