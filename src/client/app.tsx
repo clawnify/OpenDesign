@@ -7,12 +7,12 @@ import { Editor } from "./components/editor";
 import { Home } from "./components/home";
 import { loadFonts } from "./fonts";
 import { AppNav, embedded, reportLocation } from "@clawnify/app/client";
-import { useEffect } from "preact/hooks";
+import { useEffect, useRef } from "preact/hooks";
 
 export function App() {
   const { path, navigate, designId } = useRouter();
   const canvasState = useCanvasState();
-  const designState = useDesigns(canvasState.getCanvasJSONForPage);
+  const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize);
   const brandState = useBrandKits();
 
   useEffect(() => {
@@ -34,13 +34,16 @@ export function App() {
     }
   }, [designId, designState.loading]);
 
-  // Sync canvas size to the loaded design's dimensions
+  // Adopt a design's own frame when it is opened. Keyed on the design id, not
+  // the object: saving replaces activeDesign, and re-running then would snap
+  // the canvas back to the stored size mid-edit, undoing a resize.
+  const framedDesignIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (designState.activeDesign) {
-      const { width, height } = designState.activeDesign;
-      if (width && height && (width !== canvasState.canvasWidth || height !== canvasState.canvasHeight)) {
-        canvasState.setCanvasSize(width, height);
-      }
+    const design = designState.activeDesign;
+    if (!design || framedDesignIdRef.current === design.id) return;
+    framedDesignIdRef.current = design.id;
+    if (design.width && design.height) {
+      canvasState.setCanvasSize(design.width, design.height, { reflow: false });
     }
   }, [designState.activeDesign]);
 

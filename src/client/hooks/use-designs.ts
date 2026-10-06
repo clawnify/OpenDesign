@@ -1,8 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import type { Design, DesignWithPages, Template, Page } from "../types";
+import type { Dimensions } from "../resize";
 import { api } from "../api";
 
-export function useDesigns(getCanvasJSONForPage: (pageId: string) => string) {
+export function useDesigns(
+  getCanvasJSONForPage: (pageId: string) => string,
+  getCanvasSize: () => Dimensions
+) {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
@@ -54,8 +58,13 @@ export function useDesigns(getCanvasJSONForPage: (pageId: string) => string) {
       }
       // Also update design's canvas_json with first page for backwards compat
       const firstPageJson = currentPages.length > 0 ? getCanvasJSONForPage(currentPages[0].id) : "{}";
+      // The frame is part of the design: without it a resized design reopens
+      // at its old dimensions with artwork scaled for the new ones.
+      const { width, height } = getCanvasSize();
       const updated = await api<Design>("PUT", `/api/designs/${activeIdRef.current}`, {
         canvas_json: firstPageJson,
+        width,
+        height,
       });
       setDesigns((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
       setActiveDesign(updated);
@@ -64,7 +73,7 @@ export function useDesigns(getCanvasJSONForPage: (pageId: string) => string) {
     } finally {
       setSaving(false);
     }
-  }, [getCanvasJSONForPage, pages]);
+  }, [getCanvasJSONForPage, getCanvasSize, pages]);
 
   const createDesign = useCallback(async (): Promise<string | undefined> => {
     try {
