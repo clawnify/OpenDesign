@@ -14,6 +14,10 @@ export default defineConfig({
     },
   },
   server: {
+    // wrangler dev keeps the local D1/R2 state in .wrangler/ inside this root.
+    // Without this, every save writes the SQLite WAL, vite reloads the page,
+    // and the editor loses its selection and any half-typed edit.
+    watch: { ignored: ["**/.wrangler/**"] },
     proxy: {
       "/api": "http://localhost:8787",
     },
