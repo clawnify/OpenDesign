@@ -17,11 +17,18 @@ export function useDesigns(
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "pending" | "saving" | "error">("saved");
-  const [autoSave, setAutoSaveState] = useState(() => localStorage.getItem("opendesign:auto-save") === "true");
+  const [autoSave, setAutoSaveState] = useState(() => {
+    try {
+      return localStorage.getItem("opendesign:auto-save") === "true";
+    } catch {
+      return false; // storage blocked (private window, sandboxed iframe)
+    }
+  });
   const activeIdRef = useRef<string | null>(null);
   const activePageIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const designLoadRef = useRef(0);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const updatePages = useCallback((next: Page[] | ((pages: Page[]) => Page[])) => {
     const updated = typeof next === "function" ? next(pagesRef.current) : next;
     pagesRef.current = updated;
@@ -51,7 +58,7 @@ export function useDesigns(
     })();
   }, []);
 
-  const saveDesign = useCallback(async () => {
+  const saveNow = useCallback(async () => {
     const designId = activeIdRef.current;
     if (!designId) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -102,6 +109,14 @@ export function useDesigns(
       setSaving(false);
     }
   }, [getCanvasJSONForPage, getCanvasSize, updatePages]);
+
+  // One save at a time. Two overlapping saves can land their page writes out
+  // of order, and the older snapshot would overwrite the newer one.
+  const saveDesign = useCallback(() => {
+    const run = saveQueueRef.current.then(saveNow);
+    saveQueueRef.current = run;
+    return run;
+  }, [saveNow]);
 
   const createDesign = useCallback(async (): Promise<string | undefined> => {
     try {
@@ -270,7 +285,11 @@ export function useDesigns(
   }, [autoSave, saveDesign]);
 
   const setAutoSave = useCallback((enabled: boolean) => {
-    localStorage.setItem("opendesign:auto-save", String(enabled));
+    try {
+      localStorage.setItem("opendesign:auto-save", String(enabled));
+    } catch {
+      // storage blocked: the choice lasts for this session only
+    }
     setAutoSaveState(enabled);
     if (!enabled && saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);

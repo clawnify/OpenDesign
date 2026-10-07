@@ -102,8 +102,10 @@ export function useFonts() {
       try {
         const [, fonts] = await Promise.all([loadFonts(), api<CustomFont[]>("GET", "/api/fonts")]);
         // ponytail: preload the library; load by design if large font libraries slow startup.
-        await Promise.all(fonts.map(loadCustomFont));
-        setCustomFonts(fonts);
+        // A font that fails to decode is left out rather than blocking the app:
+        // the API only checks the file signature, so a corrupt upload can get in.
+        const loaded = await Promise.allSettled(fonts.map(loadCustomFont));
+        setCustomFonts(fonts.filter((_, i) => loaded[i].status === "fulfilled"));
       } catch {
         setFontsError("Could not load the fonts. Reload to try again.");
       } finally {
