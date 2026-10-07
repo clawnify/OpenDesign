@@ -44,6 +44,9 @@ export function Toolbar() {
     pages,
     saveDesign,
     saving,
+    saveStatus,
+    autoSave,
+    setAutoSave,
     activeDesign,
     renameDesign,
     navigate,
@@ -335,6 +338,24 @@ export function Toolbar() {
             </>
           )}
         </div>
+        {activeDesign && (
+          <label class="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 whitespace-nowrap cursor-pointer" title="Save changes automatically after a short pause">
+            <input
+              type="checkbox"
+              checked={autoSave}
+              onChange={(e) => {
+                setAutoSave(e.currentTarget.checked);
+                if (e.currentTarget.checked) void saveDesign();
+              }}
+            />
+            Auto-save
+          </label>
+        )}
+        {activeDesign && (
+          <span class={`text-[10px] whitespace-nowrap ${saveStatus === "error" ? "text-red-500" : "text-zinc-400"}`} aria-live="polite">
+            {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : autoSave ? "All changes saved" : ""}
+          </span>
+        )}
         <button
           class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer transition-all bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
           onClick={saveDesign}

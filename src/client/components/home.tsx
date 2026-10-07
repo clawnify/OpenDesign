@@ -51,7 +51,7 @@ export function Home({
   };
 
   return (
-    <div class="min-h-full bg-[#F3F4F7]">
+    <div class="h-full overflow-y-auto bg-[#F3F4F7]">
       {/* Header */}
       <div class="bg-white border-b border-zinc-200">
         <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">

@@ -10,10 +10,14 @@ import {
   FlipVertical,
   Trash2,
   Copy,
+  BringToFront,
+  MoveUp,
+  MoveDown,
+  SendToBack,
 } from "lucide-preact";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
-import { FONT_FAMILIES } from "../fonts";
+import { FontPicker } from "./font-picker";
 
 /**
  * The active kit's colours, offered wherever a colour is chosen. This is what
@@ -87,12 +91,15 @@ function FieldNameInput({
 }
 
 export function RightSidebar() {
-  const { selectedObject, updateSelectedObject, deleteSelected, canvas, setBackground, canvasWidth, canvasHeight } =
+  const { selectedObject, updateSelectedObject, changeLayer, deleteSelected, canvas, setBackground, canvasWidth, canvasHeight } =
     useEditor();
 
   const isText = selectedObject instanceof fabric.Textbox || selectedObject instanceof fabric.IText;
   const isImage = selectedObject instanceof fabric.FabricImage;
   const isShape = selectedObject && !isText && !isImage;
+  const objects = canvas?.getObjects() ?? [];
+  const layerIndex = selectedObject ? objects.indexOf(selectedObject) : -1;
+  const layerCount = objects.length;
 
   if (!selectedObject) {
     return (
@@ -157,26 +164,39 @@ export function RightSidebar() {
           />
         )}
 
+        <div>
+          <label class="text-[11px] text-zinc-400 mb-1 block">Layer order</label>
+          <div class="flex gap-1">
+            {([
+              ["front", BringToFront, "To front", layerIndex === layerCount - 1],
+              ["forward", MoveUp, "Forward", layerIndex === layerCount - 1],
+              ["backward", MoveDown, "Backward", layerIndex <= 0],
+              ["back", SendToBack, "To back", layerIndex <= 0],
+            ] as const).map(([action, Icon, label, disabled]) => (
+              <button
+                key={action}
+                type="button"
+                class="flex-1 flex justify-center p-1.5 rounded-md border border-zinc-300 bg-transparent text-zinc-500 cursor-pointer hover:text-zinc-900 hover:bg-zinc-100 disabled:opacity-35 disabled:cursor-not-allowed"
+                title={label}
+                aria-label={label}
+                disabled={layerIndex < 0 || disabled}
+                onClick={() => changeLayer(action)}
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ── Text properties ───────────────────────────────────────── */}
         {isText && (
           <>
             {/* Font family */}
-            <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Font family</label>
-              <select
-                class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none cursor-pointer focus:border-accent"
-                value={(selectedObject as any).fontFamily || "Inter"}
-                onChange={(e) =>
-                  updateSelectedObject({ fontFamily: (e.target as HTMLSelectElement).value })
-                }
-              >
-                {FONT_FAMILIES.map((f) => (
-                  <option key={f} value={f} style={{ fontFamily: f }}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <FontPicker
+              label="Font family"
+              value={(selectedObject as fabric.IText).fontFamily || "Inter"}
+              onChange={(fontFamily) => updateSelectedObject({ fontFamily })}
+            />
 
             {/* Font size */}
             <div>

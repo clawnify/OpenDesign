@@ -5,19 +5,18 @@ import { useBrandKits } from "./hooks/use-brand-kits";
 import { useRouter } from "./hooks/use-router";
 import { Editor } from "./components/editor";
 import { Home } from "./components/home";
-import { loadFonts } from "./fonts";
+import { useFonts } from "./fonts";
 import { AppNav, embedded, reportLocation } from "@clawnify/app/client";
 import { useEffect, useRef } from "preact/hooks";
 
 export function App() {
   const { path, navigate, designId } = useRouter();
-  const canvasState = useCanvasState();
+  const saveSchedulerRef = useRef<() => void>(() => {});
+  const canvasState = useCanvasState(() => saveSchedulerRef.current());
   const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize);
+  saveSchedulerRef.current = designState.scheduleSave;
   const brandState = useBrandKits();
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
+  const fontState = useFonts();
 
   // In the Clawnify dashboard the open screen lives in the host URL, so a
   // reload comes back to the same design.
@@ -27,12 +26,10 @@ export function App() {
 
   // Load design from URL on initial load and when designId changes
   useEffect(() => {
-    if (designId && !designState.loading) {
-      if (designState.activeDesign?.id !== designId) {
-        designState.loadDesign(designId);
-      }
+    if (designId && !designState.loading && designState.loadedDesignId !== designId) {
+      designState.loadDesign(designId);
     }
-  }, [designId, designState.loading]);
+  }, [designId, designState.loading, designState.loadedDesignId]);
 
   // Adopt a design's own frame when it is opened. Keyed on the design id, not
   // the object: saving replaces activeDesign, and re-running then would snap
@@ -70,7 +67,15 @@ export function App() {
     />
   ) : null;
 
-  if (designState.loading) {
+  if (fontState.fontsError) {
+    return <div class="flex flex-col items-center justify-center gap-3 h-full" role="alert">
+      <p>{fontState.fontsError}</p>
+      <button class="px-3 py-2 border rounded cursor-pointer" onClick={() => window.location.reload()}>Reload</button>
+    </div>;
+  }
+
+  // Fabric measures text during construction. Load fonts before mounting any canvas.
+  if (designState.loading || fontState.fontsLoading) {
     return (
       <>
       {hostNav}
@@ -107,6 +112,7 @@ export function App() {
     ...canvasState,
     ...designState,
     ...brandState,
+    ...fontState,
     // activeCanvasId is the source of truth for which page is active
     activePageId: canvasState.activeCanvasId ?? designState.activePageId,
     navigate,
