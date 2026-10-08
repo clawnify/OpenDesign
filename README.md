@@ -53,7 +53,7 @@ on a phone screen. Exports are assembled in the browser, so nothing leaves the m
 
 ```bash
 git clone https://github.com/clawnify/OpenDesign.git
-cd open-design
+cd OpenDesign
 pnpm install
 pnpm run dev
 ```
