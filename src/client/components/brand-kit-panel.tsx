@@ -1,7 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import { Upload, Plus, Trash2, Download, Wand2 } from "lucide-preact";
 import { useEditor } from "../context";
-import { FONT_FAMILIES } from "../fonts";
+import { FontPicker } from "./font-picker";
 import { exportKit, importKit } from "../lib/kit-transfer";
 
 export function BrandKitPanel() {
@@ -18,6 +18,8 @@ export function BrandKitPanel() {
     selectedObject,
     updateSelectedObject,
     setBackground,
+    customFonts,
+    importFont,
   } = useEditor();
 
   // A swatch click means "make the thing I have selected this colour"; with
@@ -57,14 +59,14 @@ export function BrandKitPanel() {
     setError(null);
     setBusy("Exporting…");
     try {
-      const { json, missing } = await exportKit(activeBrandKit);
+      const { json, missing } = await exportKit(activeBrandKit, customFonts);
       const blob = new Blob([json], { type: "application/json" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = `${activeBrandKit.name.replace(/[^\w-]+/g, "-").toLowerCase()}.brandkit.json`;
       link.click();
       URL.revokeObjectURL(link.href);
-      if (missing > 0) setError(`Exported, but ${missing} logo(s) could not be read.`);
+      if (missing > 0) setError(`Exported, but ${missing} asset(s) could not be read.`);
     } finally {
       setBusy(null);
     }
@@ -75,13 +77,13 @@ export function BrandKitPanel() {
     setError(null);
     setBusy("Importing…");
     try {
-      const result = await importKit(await files[0].text());
+      const result = await importKit(await files[0].text(), importFont);
       if (!result) {
         setError("That file is not an OpenDesign brand kit.");
         return;
       }
       await createBrandKit(result.kit);
-      if (result.missing > 0) setError(`Imported, but ${result.missing} logo(s) could not be saved.`);
+      if (result.missing > 0) setError(`Imported, but ${result.missing} asset(s) could not be saved.`);
     } finally {
       setBusy(null);
     }
@@ -186,42 +188,16 @@ export function BrandKitPanel() {
 
           {/* Fonts */}
           <div class="flex flex-col gap-2">
-            <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Heading font</label>
-              <select
-                class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none cursor-pointer focus:border-accent"
-                value={activeBrandKit.heading_font}
-                onChange={(e) =>
-                  updateBrandKit(activeBrandKit.id, {
-                    heading_font: (e.target as HTMLSelectElement).value,
-                  })
-                }
-              >
-                {FONT_FAMILIES.map((f) => (
-                  <option key={f} value={f} style={{ fontFamily: f }}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Body font</label>
-              <select
-                class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none cursor-pointer focus:border-accent"
-                value={activeBrandKit.body_font}
-                onChange={(e) =>
-                  updateBrandKit(activeBrandKit.id, {
-                    body_font: (e.target as HTMLSelectElement).value,
-                  })
-                }
-              >
-                {FONT_FAMILIES.map((f) => (
-                  <option key={f} value={f} style={{ fontFamily: f }}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <FontPicker
+              label="Heading font"
+              value={activeBrandKit.heading_font}
+              onChange={(heading_font) => updateBrandKit(activeBrandKit.id, { heading_font })}
+            />
+            <FontPicker
+              label="Body font"
+              value={activeBrandKit.body_font}
+              onChange={(body_font) => updateBrandKit(activeBrandKit.id, { body_font })}
+            />
           </div>
 
           {/* Logos */}

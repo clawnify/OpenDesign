@@ -1,8 +1,9 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
-import { initUploads, putUpload, getUpload } from "./uploads.js";
+import { initUploads, putUpload, getUpload, listFonts, storeFont } from "./uploads.js";
 import { SEED_TEMPLATES } from "./seed-templates.js";
 import { collectFields, fillPages } from "./fields.js";
+import { bodyLimit } from "hono/body-limit";
 
 type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
 
@@ -657,6 +658,23 @@ app.openapi(deleteBrandKit, async (c) => {
 });
 
 // ── File uploads ────────────────────────────────────────────────────
+
+app.get("/api/fonts", async (c) => c.json(await listFonts(c.env.UPLOADS)));
+
+app.post("/api/fonts", bodyLimit({
+  maxSize: 10 * 1024 * 1024 + 64 * 1024,
+  onError: (c) => c.json({ error: "Fonts must be at most 10 MB." }, 413),
+}), async (c) => {
+  const body = await c.req.parseBody();
+  const file = body["file"];
+  if (!(file instanceof File)) return c.json({ error: "No font file provided" }, 400);
+  try {
+    return c.json(await storeFont(c.env.UPLOADS, file), 200);
+  } catch (error) {
+    if (error instanceof TypeError) return c.json({ error: error.message }, 400);
+    throw error;
+  }
+});
 
 app.post("/api/uploads", async (c) => {
   const body = await c.req.parseBody();

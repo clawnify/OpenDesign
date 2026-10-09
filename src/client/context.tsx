@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import type { Design, Template, Page, BrandKit } from "./types";
+import type { Design, Template, Page, BrandKit, CustomFont } from "./types";
 import type * as fabric from "fabric";
 import type { Dimensions } from "./resize";
 
@@ -30,6 +30,9 @@ export const MIN_CANVAS_SIDE = 50;
 export const MAX_CANVAS_SIDE = 8000;
 
 export interface EditorContextValue {
+  customFonts: CustomFont[];
+  importFont: (file: File) => Promise<string>;
+
   // Canvas (multi-canvas)
   registerCanvas: (pageId: string, canvas: fabric.Canvas) => void;
   unregisterCanvas: (pageId: string) => void;
@@ -50,6 +53,7 @@ export interface EditorContextValue {
   addImage: (url: string) => void;
   setBackground: (type: "color" | "gradient" | "image", value: string) => void;
   updateSelectedObject: (props: Record<string, unknown>) => void;
+  changeLayer: (action: "front" | "forward" | "backward" | "back") => void;
   deleteSelected: () => void;
   undo: () => void;
   redo: () => void;
@@ -76,6 +80,7 @@ export interface EditorContextValue {
   // Designs
   designs: Design[];
   activeDesign: Design | null;
+  loadedDesignId: string | null;
   createDesign: () => Promise<string | undefined>;
   createFromTemplate: (template: Template) => Promise<string | undefined>;
   loadDesign: (id: string) => Promise<void>;
@@ -83,6 +88,9 @@ export interface EditorContextValue {
   deleteDesign: (id: string) => Promise<void>;
   renameDesign: (id: string, name: string) => Promise<void>;
   saving: boolean;
+  saveStatus: "saved" | "pending" | "saving" | "error";
+  autoSave: boolean;
+  setAutoSave: (enabled: boolean) => void;
 
   // Pages
   pages: Page[];

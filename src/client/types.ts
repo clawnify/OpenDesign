@@ -1,3 +1,9 @@
+export interface CustomFont {
+  family: string;
+  name: string;
+  url: string;
+}
+
 export interface Design {
   id: string;
   name: string;

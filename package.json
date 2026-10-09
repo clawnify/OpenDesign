@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler d1 execute open-design-db --local --file=schema.sql && concurrently -n ui,api -c cyan,green \"vite\" \"wrangler dev --port 8787\"",
-    "test": "esbuild src/server/fields.test.ts --bundle --platform=node --format=esm --outfile=.test-build/fields.test.mjs --log-level=warning && node --test .test-build/fields.test.mjs",
+    "test": "esbuild src/server/fields.test.ts src/client/fonts.test.ts --bundle --platform=node --format=esm --outdir=.test-build --out-extension:.js=.mjs --loader:.css=empty --log-level=warning && node --test .test-build/server/fields.test.mjs .test-build/client/fonts.test.mjs",
     "build": "vite build"
   },
   "dependencies": {

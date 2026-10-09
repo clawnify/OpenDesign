@@ -20,6 +20,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 - **Fabric.js canvas** — full object manipulation with retina/HiDPI rendering (2x device pixel ratio)
 - **Pre-built templates** — LinkedIn-optimized: Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text
 - **10 Google Fonts** — Inter, Playfair Display, Montserrat, Poppins, Roboto, Open Sans, Lora, Raleway, Source Sans Pro, Merriweather
+- **Custom fonts** — click **Import font from computer…** in a text or brand-kit font selector to upload TTF, OTF, WOFF or WOFF2 files (up to 10 MB). Fonts are saved with the app, load before the canvas renders, and travel with exported brand kits.
 - **Text editing** — font family, size, weight, alignment, color, line height, letter spacing
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
 - **Image uploads** — drag-and-drop or click to upload, place on canvas
@@ -164,7 +165,9 @@ templates (id, name, category, canvas_json, width, height, thumbnail_url, sort_o
 | GET | `/api/templates` | List all templates |
 | GET | `/api/templates/:id` | Get a template |
 | POST | `/api/uploads` | Upload an image file |
-| GET | `/api/uploads/:filename` | Serve an uploaded image |
+| GET | `/api/uploads/:filename` | Serve an uploaded image or font |
+| GET | `/api/fonts` | List imported fonts |
+| POST | `/api/fonts` | Import a font file (multipart `file`, up to 10 MB) |
 
 ## Template Fields
 
