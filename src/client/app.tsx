@@ -6,7 +6,7 @@ import { useRouter } from "./hooks/use-router";
 import { Editor } from "./components/editor";
 import { Home } from "./components/home";
 import { useFonts } from "./fonts";
-import { AppNav, embedded, reportLocation } from "@clawnify/app/client";
+import { AppNav, reportLocation } from "@clawnify/app/client";
 import { useEffect, useRef } from "preact/hooks";
 
 export function App() {
@@ -51,7 +51,10 @@ export function App() {
     }
   }, [designState.pages, canvasState.activeCanvasId]);
 
-  const hostNav = embedded ? (
+  // Inside Clawnify the dashboard draws this navigation. Anywhere else the app
+  // keeps its own layout (standalone draws nothing) and AppNav only adds the
+  // SDK's notice for a self-hosted copy.
+  const hostNav = (
     <AppNav
       title="Design"
       icon="image"
@@ -64,8 +67,9 @@ export function App() {
         },
       ]}
       onNavigate={(item) => item.href && navigate(item.href)}
+      standalone={() => null}
     />
-  ) : null;
+  );
 
   if (fontState.fontsError) {
     return <div class="flex flex-col items-center justify-center gap-3 h-full" role="alert">
