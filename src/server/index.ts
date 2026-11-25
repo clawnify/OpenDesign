@@ -59,6 +59,7 @@ const DesignSchema = z.object({
   thumbnail_url: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
+  is_template: z.number().optional(),
 });
 
 const TemplateSchema = z.object({
@@ -70,6 +71,9 @@ const TemplateSchema = z.object({
   height: z.number(),
   thumbnail_url: z.string().nullable(),
   sort_order: z.number(),
+  // Set when the template is one of your own designs. Starting from it copies
+  // every page of that design (POST /api/designs/{id}/fill with save: true).
+  design_id: z.string().nullable().optional(),
 });
 
 const PageSchema = z.object({
@@ -178,6 +182,7 @@ const updateDesign = createRoute({
             width: z.number().optional(),
             height: z.number().optional(),
             thumbnail_url: z.string().optional(),
+            is_template: z.boolean().optional().describe("Offer this design as a template to start from"),
           }),
         },
       },
@@ -196,8 +201,9 @@ app.openapi(updateDesign, async (c) => {
   if (!existing) return c.json({ error: "Not found" }, 404);
 
   await run(
-    `UPDATE designs SET name = ?, canvas_json = ?, width = ?, height = ?, thumbnail_url = ?, updated_at = datetime('now') WHERE id = ?`,
-    [body.name ?? existing.name, body.canvas_json ?? existing.canvas_json, body.width ?? existing.width, body.height ?? existing.height, body.thumbnail_url ?? existing.thumbnail_url, id]
+    `UPDATE designs SET name = ?, canvas_json = ?, width = ?, height = ?, thumbnail_url = ?, is_template = ?, updated_at = datetime('now') WHERE id = ?`,
+    [body.name ?? existing.name, body.canvas_json ?? existing.canvas_json, body.width ?? existing.width, body.height ?? existing.height, body.thumbnail_url ?? existing.thumbnail_url,
+     body.is_template === undefined ? existing.is_template ?? 0 : body.is_template ? 1 : 0, id]
   );
   const row = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [id]);
   return c.json(row!, 200);
@@ -506,8 +512,15 @@ const listTemplates = createRoute({
 });
 
 app.openapi(listTemplates, async (c) => {
-  const rows = await query<z.infer<typeof TemplateSchema>>("SELECT * FROM templates ORDER BY sort_order");
-  return c.json(rows, 200);
+  const starters = await query<z.infer<typeof TemplateSchema>>("SELECT * FROM templates ORDER BY sort_order");
+  // Your own designs marked as templates come first: they are the ones made for this business.
+  const yours = await query<{ id: string; name: string; canvas_json: string; width: number; height: number; thumbnail_url: string | null }>(
+    "SELECT id, name, canvas_json, width, height, thumbnail_url FROM designs WHERE is_template = 1 ORDER BY updated_at DESC",
+  );
+  return c.json([
+    ...yours.map((d) => ({ ...d, id: `design-${d.id}`, category: "yours", sort_order: 0, design_id: d.id })),
+    ...starters.map((t) => ({ ...t, design_id: null })),
+  ], 200);
 });
 
 // ── Get template ────────────────────────────────────────────────────

@@ -13,6 +13,8 @@ export interface Design {
   thumbnail_url: string | null;
   created_at: string;
   updated_at: string;
+  /** 1 when offered as a template to start from. */
+  is_template?: number;
 }
 
 export interface Page {
@@ -48,4 +50,6 @@ export interface Template {
   height: number;
   thumbnail_url: string | null;
   sort_order: number;
+  /** Set when the template is one of your own designs; starting from it copies all its pages. */
+  design_id?: string | null;
 }

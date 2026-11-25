@@ -44,6 +44,50 @@ function BrandSwatches({ onPick }: { onPick: (color: string) => void }) {
 }
 
 /**
+ * Shrink a text so it stays on this many lines (lib/fit-text.ts). Empty is
+ * off, which puts the text back at the size it was designed at.
+ */
+function FitLinesInput({
+  object,
+  onCommit,
+}: {
+  object: fabric.FabricObject;
+  onCommit: (lines: number | null) => void;
+}) {
+  const saved = Number((object as any).maxLines) || 0;
+  const [draft, setDraft] = useState(saved ? String(saved) : "");
+
+  useEffect(() => setDraft(saved ? String(saved) : ""), [object]);
+
+  const commit = () => {
+    const n = Math.floor(Number(draft));
+    const next = n >= 1 && n <= 20 ? n : 0;
+    if (next !== saved) onCommit(next || null);
+    setDraft(next ? String(next) : "");
+  };
+
+  return (
+    <div>
+      <label class="text-[11px] text-zinc-400 mb-1 block">Fit on lines</label>
+      <input
+        type="number"
+        min={1}
+        max={20}
+        placeholder="Off"
+        title="Shrinks the text so a longer value stays on this many lines"
+        class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent"
+        value={draft}
+        onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+      />
+    </div>
+  );
+}
+
+/**
  * Names an object so `/api/designs/:id/fields` publishes it and
  * `/api/designs/:id/fill` can write to it. Committed on blur rather than per
  * keystroke, so naming a field costs one undo step instead of one per letter.
@@ -161,6 +205,19 @@ export function RightSidebar() {
           <FieldNameInput
             object={selectedObject}
             onCommit={(fieldName) => updateSelectedObject({ fieldName })}
+          />
+        )}
+        {isText && (
+          <FitLinesInput
+            object={selectedObject}
+            onCommit={(lines) => {
+              const o = selectedObject as any;
+              updateSelectedObject(
+                lines
+                  ? { maxLines: lines }
+                  : { maxLines: undefined, fitFontSize: undefined, fontSize: o.fitFontSize ?? o.fontSize },
+              );
+            }}
           />
         )}
 

@@ -1,8 +1,13 @@
+import { fillTokens, replaceText, tokensIn } from "./rich-text.js";
+
 /**
  * Template fields — named, typed slots on a design.
  *
- * Any Fabric object carrying a `fieldName` becomes a fill point: text objects
- * take a string, image objects take a URL. The name is deliberately not unique.
+ * Two ways to make one. Any Fabric object carrying a `fieldName` becomes a fill
+ * point: text objects take a string, image objects take a URL. And any
+ * `{{name}}` written inside a text is a text field of its own, so one sentence
+ * can keep its fixed words and change only the part that varies. In both, the
+ * value takes the style of what it replaces. The name is deliberately not unique.
  * The same name on several objects, or on several pages, fills all of them —
  * that is how a logo or a campaign headline repeats across a carousel.
  *
@@ -93,19 +98,21 @@ export function collectFields(pages: PageJSON[]): Field[] {
     const canvas = parseCanvas(page.canvas_json);
     if (!canvas) continue;
 
-    eachObject(canvas, (obj) => {
-      const name = fieldNameOf(obj);
-      const type = name ? fieldTypeOf(obj) : null;
-      if (!name || !type) return;
-
+    const add = (name: string, type: FieldType, value: string) => {
       const existing = byName.get(name);
       if (existing) {
         if (!existing.page_ids.includes(page.id)) existing.page_ids.push(page.id);
         return;
       }
-
-      const value = type === "text" ? String(obj.text ?? "") : String(obj.src ?? "");
       byName.set(name, { name, type, value, page_ids: [page.id] });
+    };
+
+    eachObject(canvas, (obj) => {
+      const type = fieldTypeOf(obj);
+      const name = fieldNameOf(obj);
+      if (name && type) add(name, type, type === "text" ? String(obj.text ?? "") : String(obj.src ?? ""));
+      // A variable has no value of its own until it is filled.
+      if (type === "text" && !name) for (const token of tokensIn(String(obj.text ?? ""))) add(token, "text", "");
     });
   }
 
@@ -129,17 +136,26 @@ export function fillPages<P extends PageJSON>(pages: P[], values: Record<string,
 
     let touched = false;
     eachObject(canvas, (obj) => {
-      const name = fieldNameOf(obj);
-      if (!name || !Object.prototype.hasOwnProperty.call(values, name)) return;
-
       const type = fieldTypeOf(obj);
       if (!type) return;
+      const name = fieldNameOf(obj);
 
-      if (type === "text") obj.text = values[name];
-      else obj.src = values[name];
+      if (name && Object.prototype.hasOwnProperty.call(values, name)) {
+        if (type === "text") Object.assign(obj, replaceText(String(obj.text ?? ""), obj.styles, values[name]));
+        else obj.src = values[name];
+        filled.add(name);
+        touched = true;
+        return;
+      }
 
-      filled.add(name);
-      touched = true;
+      if (type === "text") {
+        const result = fillTokens(String(obj.text ?? ""), obj.styles, values);
+        if (!result) return;
+        obj.text = result.text;
+        obj.styles = result.styles;
+        for (const token of result.filled) filled.add(token);
+        touched = true;
+      }
     });
 
     return touched ? { ...page, canvas_json: JSON.stringify(canvas) } : page;

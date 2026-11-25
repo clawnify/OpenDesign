@@ -4,6 +4,8 @@ import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-500.css";
 import "@fontsource/inter/latin-600.css";
 import "@fontsource/inter/latin-700.css";
+import "@fontsource/inter/latin-800.css";
+import "@fontsource/inter/latin-900.css";
 import "@fontsource/playfair-display/latin-400.css";
 import "@fontsource/playfair-display/latin-500.css";
 import "@fontsource/playfair-display/latin-600.css";
@@ -41,7 +43,8 @@ import { api } from "./api";
 import type { CustomFont } from "./types";
 
 const FAMILIES: Record<string, number[]> = {
-  Inter: [400, 500, 600, 700],
+  // 800 and 900 for display headlines, which otherwise need an uploaded font.
+  Inter: [400, 500, 600, 700, 800, 900],
   "Playfair Display": [400, 500, 600, 700, 800, 900],
   Montserrat: [400, 500, 600, 700, 800, 900],
   Poppins: [400, 500, 600, 700],

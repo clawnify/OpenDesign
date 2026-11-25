@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
+import { fitAll, fitText } from "../lib/fit-text";
 import * as fabric from "fabric";
 import type { Template, BrandKit } from "../types";
 import { reflowCanvas, type Dimensions } from "../resize";
@@ -122,7 +123,11 @@ export function useCanvasState(onChange: () => void = () => {}) {
     canvas.on("object:added", () => saveHistory(pageId));
     canvas.on("object:modified", () => saveHistory(pageId));
     canvas.on("object:removed", () => saveHistory(pageId));
-    canvas.on("text:changed", () => onChangeRef.current());
+    canvas.on("text:changed", (e) => {
+      // A fitted text shrinks as it is typed, so the layout never gets a line it has no room for.
+      if (e.target && fitText(e.target)) canvas.requestRenderAll();
+      onChangeRef.current();
+    });
 
     // Initial history snapshot
     setTimeout(() => {
@@ -318,7 +323,12 @@ export function useCanvasState(onChange: () => void = () => {}) {
       const canvas = getActiveCanvas();
       const pageId = activeCanvasIdRef.current;
       if (!canvas || !selectedObject || !pageId) return;
-      selectedObject.set(props as Partial<fabric.FabricObject>);
+      // With fit on, a size chosen by hand is the new designed size, and the fit works down from it.
+      // "maxLines" in props: turning fit off sends maxLines: undefined, which must win.
+      const fitted = "maxLines" in props ? props.maxLines : (selectedObject as { maxLines?: number }).maxLines;
+      const next = typeof props.fontSize === "number" && fitted ? { ...props, fitFontSize: props.fontSize } : props;
+      selectedObject.set(next as Partial<fabric.FabricObject>);
+      fitText(selectedObject);
       canvas.requestRenderAll();
       saveHistory(pageId);
       bumpSelection();
@@ -366,6 +376,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       hist.index = index;
       const json = hist.entries[index];
       canvas.loadFromJSON(JSON.parse(json)).then(() => {
+        fitAll(canvas);
         canvas.requestRenderAll();
         isRestoringRef.current.delete(pageId);
         updateUndoRedoState(pageId);
@@ -462,6 +473,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       if (!json) continue;
       isRestoringRef.current.add(pageId);
       canvas.loadFromJSON(JSON.parse(json)).then(() => {
+        fitAll(canvas);
         canvas.requestRenderAll();
         isRestoringRef.current.delete(pageId);
         historyMapRef.current.set(pageId, { entries: [json], index: 0 });
@@ -564,6 +576,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       if (canvas && pageId) {
         isRestoringRef.current.add(pageId);
         canvas.loadFromJSON(JSON.parse(template.canvas_json)).then(() => {
+          fitAll(canvas);
           canvas.requestRenderAll();
           isRestoringRef.current.delete(pageId);
           historyMapRef.current.set(pageId, {
