@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "preact/hooks";
+import { fitAll } from "../lib/fit-text";
 import * as fabric from "fabric";
 import type { Template } from "../types";
 
@@ -24,6 +25,7 @@ export function TemplateCard({ template, onClick }: Props) {
     try {
       const parsed = JSON.parse(template.canvas_json);
       tempCanvas.loadFromJSON(parsed).then(() => {
+        fitAll(tempCanvas);
         tempCanvas.renderAll();
         // Render at 400px wide for crisp retina thumbnails
         const targetPx = 400;

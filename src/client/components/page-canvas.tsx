@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "preact/hooks";
+import { fitAll } from "../lib/fit-text";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
 import type { Page } from "../types";
@@ -133,7 +134,10 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
     // Load page content
     if (page.canvas_json && page.canvas_json !== "{}") {
       try {
-        c.loadFromJSON(JSON.parse(page.canvas_json)).then(() => c.requestRenderAll());
+        c.loadFromJSON(JSON.parse(page.canvas_json)).then(() => {
+          fitAll(c);
+          c.requestRenderAll();
+        });
       } catch {
         // ignore parse errors
       }
