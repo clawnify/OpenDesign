@@ -6,7 +6,9 @@ CREATE TABLE IF NOT EXISTS designs (
   height INTEGER DEFAULT 1080,
   thumbnail_url TEXT,
   created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  updated_at TEXT DEFAULT (datetime('now')),
+  -- 1: offered under "Start from a template", next to the starter templates.
+  is_template INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS templates (

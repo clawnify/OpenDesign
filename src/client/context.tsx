@@ -87,6 +87,7 @@ export interface EditorContextValue {
   saveDesign: () => Promise<void>;
   deleteDesign: (id: string) => Promise<void>;
   renameDesign: (id: string, name: string) => Promise<void>;
+  setDesignTemplate: (id: string, on: boolean) => Promise<void>;
   saving: boolean;
   saveStatus: "saved" | "pending" | "saving" | "error";
   autoSave: boolean;

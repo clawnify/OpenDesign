@@ -49,6 +49,7 @@ export function Toolbar() {
     setAutoSave,
     activeDesign,
     renameDesign,
+    setDesignTemplate,
     navigate,
   } = useEditor();
 
@@ -349,6 +350,16 @@ export function Toolbar() {
               }}
             />
             Auto-save
+          </label>
+        )}
+        {activeDesign && (
+          <label class="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 whitespace-nowrap cursor-pointer" title="Offer this design under Start from a template. Starting from it copies every page.">
+            <input
+              type="checkbox"
+              checked={Boolean(activeDesign.is_template)}
+              onChange={(e) => void setDesignTemplate(activeDesign.id, e.currentTarget.checked)}
+            />
+            Template
           </label>
         )}
         {activeDesign && (

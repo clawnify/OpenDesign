@@ -133,6 +133,17 @@ export function useDesigns(
 
   const createFromTemplate = useCallback(async (template: Template): Promise<string | undefined> => {
     try {
+      if (template.design_id) {
+        // One of your own designs: copy every page, fields and all. A fill with
+        // no values and save: true is exactly that copy.
+        const copy = await api<{ design: Design }>("POST", `/api/designs/${template.design_id}/fill`, {
+          values: {},
+          save: true,
+          name: template.name,
+        });
+        setDesigns((prev) => [copy.design, ...prev]);
+        return copy.design.id;
+      }
       const d = await api<Design>("POST", "/api/designs", {
         name: template.name,
         canvas_json: template.canvas_json,
@@ -184,6 +195,20 @@ export function useDesigns(
       console.error("Failed to delete:", e);
     }
   }, [updatePages]);
+
+  /** Offer a design as a template to start from, or stop offering it. */
+  const setDesignTemplate = useCallback(async (id: string, on: boolean) => {
+    try {
+      // The template is the design as saved, so save what is on screen first.
+      if (on && activeIdRef.current === id) await saveDesign();
+      const updated = await api<Design>("PUT", `/api/designs/${id}`, { is_template: on });
+      setDesigns((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      if (activeIdRef.current === id) setActiveDesign(updated);
+      setTemplates(await api<Template[]>("GET", "/api/templates"));
+    } catch (e) {
+      console.error("Failed to change the template setting:", e);
+    }
+  }, [saveDesign]);
 
   const renameDesign = useCallback(async (id: string, name: string) => {
     try {
@@ -315,6 +340,7 @@ export function useDesigns(
     saveDesign,
     deleteDesign,
     renameDesign,
+    setDesignTemplate,
     scheduleSave,
     // Pages
     pages,
