@@ -17,9 +17,12 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 ## Features
 
 - **Template fields** — name any text or image object, then fill it from data or an agent over the API; one name can drive several objects and pages at once
+- **Variables inside text** — write `{{name}}` in a sentence and fill only that part; the value keeps the variable's colour and weight
+- **Fit on lines** — a text can shrink so a longer value stays on the lines the layout has room for
+- **Your own templates** — mark any design as a template and start new designs from it, every page included
 - **Fabric.js canvas** — full object manipulation with retina/HiDPI rendering (2x device pixel ratio)
 - **Pre-built templates** — LinkedIn-optimized: Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text
-- **10 Google Fonts** — Inter, Playfair Display, Montserrat, Poppins, Roboto, Open Sans, Lora, Raleway, Source Sans Pro, Merriweather
+- **10 Google Fonts** — Inter (up to Black, 900), Playfair Display, Montserrat, Poppins, Roboto, Open Sans, Lora, Raleway, Source Sans Pro, Merriweather
 - **Custom fonts** — click **Import font from computer…** in a text or brand-kit font selector to upload TTF, OTF, WOFF or WOFF2 files (up to 10 MB). Fonts are saved with the app, load before the canvas renders, and travel with exported brand kits.
 - **Text editing** — font family, size, weight, alignment, color, line height, letter spacing
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
@@ -201,6 +204,28 @@ The response carries the filled pages plus `filled` and `unmatched`, so a name
 that matches nothing is reported rather than failing the request. The stored
 design is left alone — add `"save": true` (and optionally `"name"`) to persist
 the result as a new design instead.
+
+### Variables inside a text
+
+A field can also be part of a sentence. Write `{{name}}` in any text and `name`
+becomes a field: "for `{{to_label}}` since `{{since}}`". Style the variable the
+way the value should look. The value takes that style and the rest of the
+sentence keeps its own, so a blue `{{to_label}}` fills blue with grey words
+around it. A whole-object field follows the same rule: its new text takes the
+style of the old text's first character.
+
+### Fit on lines
+
+Set **Fit on lines** on a text (`maxLines` in the JSON) and a longer value
+shrinks to stay on that many lines instead of wrapping into the next element.
+It never goes below 40% of the designed size, and grows back when the value is
+short again.
+
+### Your own templates
+
+Tick **Template** in the toolbar and the design is offered under "Start from a
+template", ahead of the starters. Starting from it copies every page with its
+fields; the copy is an ordinary design.
 
 ### How far this scales today
 
