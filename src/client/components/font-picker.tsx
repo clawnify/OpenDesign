@@ -20,36 +20,36 @@ export function FontPicker({ value, onChange, label }: {
   ];
 
   return <div>
-    <label class="text-[11px] text-zinc-400 mb-1 block">{label}</label>
+    <label class="field-label">{label}</label>
     <button
       type="button"
       aria-label={`${label}: ${fonts.find((font) => font.family === value)?.name ?? `${value} (unavailable)`}`}
       aria-expanded={open}
       aria-controls={id}
-      class="w-full flex items-center justify-between bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none cursor-pointer focus:border-accent"
+      class="field flex items-center justify-between text-left cursor-pointer"
       onClick={() => setOpen(!open)}
     >
       <span style={{ fontFamily: value }}>{fonts.find((font) => font.family === value)?.name ?? `${value} (unavailable)`}</span>
-      {open ? <ChevronUp size={14} class="text-zinc-400" /> : <ChevronDown size={14} class="text-zinc-400" />}
+      {open ? <ChevronUp size={14} class="text-muted" /> : <ChevronDown size={14} class="text-muted" />}
     </button>
-    {open && <div id={id} role="group" aria-label="Available fonts" class="mt-1 max-h-56 overflow-y-auto bg-white border border-zinc-200 rounded-md shadow-lg p-1">
+    {open && <div id={id} role="group" aria-label="Available fonts" class="menu mt-1 max-h-56 overflow-y-auto">
       {fonts.map((font) => (
         <button
           key={font.family}
           type="button"
           aria-pressed={value === font.family}
-          class={`w-full flex items-center justify-between gap-3 text-left px-2 py-1.5 rounded cursor-pointer ${value === font.family ? "bg-accent/10 text-accent" : "bg-transparent text-zinc-700 hover:bg-zinc-50"}`}
+          class="menu-item justify-between gap-3"
           onClick={() => { onChange(font.family); setOpen(false); }}
         >
           <span class="truncate" style={{ fontFamily: font.family }}>{font.name}</span>
-          <span class="shrink-0 text-sm" style={{ fontFamily: font.family }}>Aa 123</span>
+          <span class="shrink-0 text-body-sm text-muted" style={{ fontFamily: font.family }}>Aa 123</span>
         </button>
       ))}
     </div>}
     <button
       type="button"
       disabled={busy}
-      class="mt-1 text-[11px] text-accent bg-transparent border-none cursor-pointer disabled:opacity-50"
+      class="mt-1.5 p-0 text-label text-link underline decoration-border underline-offset-2 bg-transparent border-none cursor-pointer hover:decoration-foreground disabled:opacity-50"
       onClick={() => input.current?.click()}
     >{busy ? "Importing…" : "Import font from computer…"}</button>
     <input
@@ -73,6 +73,6 @@ export function FontPicker({ value, onChange, label }: {
         }
       }}
     />
-    {error && <p role="alert" class="text-[11px] text-red-500 mt-1">{error}</p>}
+    {error && <p role="alert" class="text-fine text-danger mt-1">{error}</p>}
   </div>;
 }

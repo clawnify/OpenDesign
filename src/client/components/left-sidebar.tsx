@@ -116,33 +116,34 @@ export function LeftSidebar() {
   return (
     <aside class="flex flex-row shrink-0">
       {/* Icon Rail */}
-      <div class="w-[70px] bg-white border-r border-zinc-200 flex flex-col items-center pt-2 gap-0.5 shrink-0">
+      <div class="w-[4.75rem] bg-surface-sunken border-r border-border flex flex-col items-center pt-2 gap-1 shrink-0">
         {SECTIONS.map((s) => (
           <button
             key={s.key}
-            class={`flex flex-col items-center justify-center gap-0.5 w-[56px] h-[56px] rounded-lg bg-transparent border-none cursor-pointer transition-all ${
+            class={`flex flex-col items-center justify-center gap-1 w-16 h-14 rounded-sm border-none cursor-pointer ${
               activeSection === s.key
-                ? "text-accent bg-accent/10"
-                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
+                ? "bg-nav-active text-foreground"
+                : "bg-transparent text-muted hover:bg-nav-active hover:text-foreground"
             }`}
+            aria-pressed={activeSection === s.key}
             onClick={() => handleSectionClick(s.key)}
           >
             <s.icon size={20} />
-            <span class="text-[10px] leading-tight">{s.label}</span>
+            <span class="text-fine font-medium leading-none">{s.label}</span>
           </button>
         ))}
       </div>
 
       {/* Content Panel */}
       <div
-        class="bg-white border-r border-zinc-200 overflow-hidden transition-all duration-200 ease-in-out"
-        style={{ width: isOpen ? "240px" : "0px" }}
+        class="bg-surface border-r border-border overflow-hidden transition-[width] duration-200 ease-in-out"
+        style={{ width: isOpen ? "15rem" : "0" }}
       >
-        <div class="w-[240px] h-full flex flex-col">
+        <div class="w-[15rem] h-full flex flex-col">
           {activeSection && (
             <>
-              <div class="px-3 pt-3 pb-2 shrink-0">
-                <h2 class="text-xs font-semibold text-zinc-800 uppercase tracking-wide m-0">
+              <div class="h-12 px-3 flex items-center shrink-0">
+                <h2 class="text-heading-3 text-foreground m-0">
                   {SECTION_TITLES[activeSection]}
                 </h2>
               </div>
@@ -150,10 +151,10 @@ export function LeftSidebar() {
                 {activeSection === "templates" && (
                   <div>
                     {templates.length === 0 ? (
-                      <p class="text-zinc-400 text-[11px]">No templates yet.</p>
+                      <p class="text-body-sm text-muted">No templates yet.</p>
                     ) : (
                       <>
-                        <p class="text-zinc-400 text-[11px] mb-3">Click a template to apply</p>
+                        <p class="text-body-sm text-muted mb-3">Click a template to apply</p>
                         <div class="grid grid-cols-2 gap-2">
                           {templates.map((t) => (
                             <TemplateCard key={t.id} template={t} onClick={() => loadTemplate(t)} />
@@ -168,37 +169,37 @@ export function LeftSidebar() {
 
                 {activeSection === "text" && (
                   <div class="flex flex-col gap-2">
-                    <p class="text-zinc-400 text-[11px] mb-1">Click to add text</p>
+                    <p class="text-body-sm text-muted mb-1">Click to add text</p>
                     <button
-                      class="w-full text-left p-3 rounded-lg bg-white border border-zinc-200 cursor-pointer transition-all hover:border-accent hover:bg-accent/5 group"
+                      class="card is-interactive w-full text-left p-3 border-none cursor-pointer"
                       onClick={() => addText("heading")}
                     >
-                      <span class="text-lg font-bold text-zinc-900 group-hover:text-accent transition-colors">
+                      <span class="text-heading-1 font-bold text-foreground">
                         Add a heading
                       </span>
-                      <span class="block text-[10px] text-zinc-400 mt-0.5">
+                      <span class="block text-fine text-muted mt-1">
                         Montserrat Bold, 48px
                       </span>
                     </button>
                     <button
-                      class="w-full text-left p-3 rounded-lg bg-white border border-zinc-200 cursor-pointer transition-all hover:border-accent hover:bg-accent/5 group"
+                      class="card is-interactive w-full text-left p-3 border-none cursor-pointer"
                       onClick={() => addText("subheading")}
                     >
-                      <span class="text-sm font-medium text-zinc-900 group-hover:text-accent transition-colors">
+                      <span class="text-body font-medium text-foreground">
                         Add a subheading
                       </span>
-                      <span class="block text-[10px] text-zinc-400 mt-0.5">
+                      <span class="block text-fine text-muted mt-1">
                         Inter Medium, 32px
                       </span>
                     </button>
                     <button
-                      class="w-full text-left p-3 rounded-lg bg-white border border-zinc-200 cursor-pointer transition-all hover:border-accent hover:bg-accent/5 group"
+                      class="card is-interactive w-full text-left p-3 border-none cursor-pointer"
                       onClick={() => addText("body")}
                     >
-                      <span class="text-xs text-zinc-900 group-hover:text-accent transition-colors">
+                      <span class="text-body-sm text-foreground">
                         Add body text
                       </span>
-                      <span class="block text-[10px] text-zinc-400 mt-0.5">
+                      <span class="block text-fine text-muted mt-1">
                         Inter Regular, 18px
                       </span>
                     </button>
@@ -207,7 +208,7 @@ export function LeftSidebar() {
 
                 {activeSection === "shapes" && (
                   <div>
-                    <p class="text-zinc-400 text-[11px] mb-2">Click to add a shape</p>
+                    <p class="text-body-sm text-muted mb-2">Click to add a shape</p>
                     <div class="grid grid-cols-2 gap-2">
                       {[
                         { type: "rect" as const, icon: Square, label: "Rectangle" },
@@ -217,11 +218,11 @@ export function LeftSidebar() {
                       ].map((s) => (
                         <button
                           key={s.type}
-                          class="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-white border border-zinc-200 cursor-pointer transition-all hover:border-accent hover:bg-accent/5"
+                          class="card is-interactive flex flex-col items-center gap-1.5 p-3 border-none cursor-pointer"
                           onClick={() => addShape(s.type)}
                         >
-                          <s.icon size={24} class="text-zinc-400" />
-                          <span class="text-[11px] text-zinc-400">{s.label}</span>
+                          <s.icon size={24} class="text-muted" />
+                          <span class="text-label text-foreground">{s.label}</span>
                         </button>
                       ))}
                     </div>
@@ -230,18 +231,18 @@ export function LeftSidebar() {
 
                 {activeSection === "images" && (
                   <div>
-                    <p class="text-zinc-400 text-[11px] mb-2">Upload images to add to canvas</p>
+                    <p class="text-body-sm text-muted mb-2">Upload images to add to canvas</p>
                     <div
-                      class="border-2 border-dashed border-zinc-300 rounded-lg p-6 text-center cursor-pointer transition-all hover:border-accent/50 hover:bg-accent/5"
+                      class="dropzone p-6 text-center"
                       onClick={() => fileInputRef.current?.click()}
                       onDrop={handleDrop}
                       onDragOver={(e) => e.preventDefault()}
                     >
-                      <Upload size={24} class="text-zinc-400 mx-auto mb-2" />
-                      <p class="text-xs text-zinc-400">
-                        {uploading ? "Uploading..." : "Click or drag images here"}
+                      <Upload size={24} class="mx-auto mb-2" />
+                      <p class="text-body-sm">
+                        {uploading ? "Uploading…" : "Click or drag images here"}
                       </p>
-                      <p class="text-[10px] text-zinc-600 mt-1">PNG, JPG, SVG, WebP</p>
+                      <p class="text-fine text-muted mt-1">PNG, JPG, SVG, WebP</p>
                     </div>
                     <input
                       ref={fileInputRef}
@@ -256,33 +257,33 @@ export function LeftSidebar() {
 
                 {activeSection === "background" && (
                   <div>
-                    <p class="text-zinc-400 text-[11px] mb-2">Solid colors</p>
+                    <p class="field-label">Solid colors</p>
                     <div class="grid grid-cols-4 gap-1.5 mb-4">
                       {BG_COLORS.map((c) => (
                         <button
                           key={c}
-                          class="w-full aspect-square rounded-md border border-zinc-300 cursor-pointer transition-all hover:scale-110 hover:border-accent"
+                          class="swatch w-full aspect-square"
                           style={{ background: c }}
                           onClick={() => setBackground("color", c)}
                         />
                       ))}
                     </div>
 
-                    <p class="text-zinc-400 text-[11px] mb-2">Custom color</p>
+                    <p class="field-label">Custom color</p>
                     <input
                       type="color"
-                      class="w-full h-8 rounded-md border border-zinc-300 cursor-pointer bg-transparent"
+                      class="swatch w-full h-8"
                       onChange={(e) =>
                         setBackground("color", (e.target as HTMLInputElement).value)
                       }
                     />
 
-                    <p class="text-zinc-400 text-[11px] mb-2 mt-4">Gradient presets</p>
+                    <p class="field-label mt-4">Gradient presets</p>
                     <div class="grid grid-cols-3 gap-1.5 mb-4">
                       {GRADIENT_PRESETS.map((g, i) => (
                         <button
                           key={i}
-                          class="w-full aspect-square rounded-md border border-zinc-300 cursor-pointer transition-all hover:scale-110 hover:border-accent"
+                          class="swatch w-full aspect-square"
                           style={{ background: g }}
                           onClick={() => {
                             const match = g.match(/#[0-9a-f]{6}/gi);
@@ -292,12 +293,12 @@ export function LeftSidebar() {
                       ))}
                     </div>
 
-                    <p class="text-zinc-400 text-[11px] mb-2">Background image</p>
+                    <p class="field-label">Background image</p>
                     <button
-                      class="w-full p-3 rounded-lg bg-white border border-zinc-200 cursor-pointer text-xs text-zinc-400 hover:border-accent hover:text-zinc-800 transition-all"
+                      class="btn btn-secondary w-full"
                       onClick={() => bgFileRef.current?.click()}
                     >
-                      <Upload size={14} class="inline mr-1.5" />
+                      <Upload size={14} />
                       Upload image
                     </button>
                     <input

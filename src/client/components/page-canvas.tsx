@@ -37,19 +37,24 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
     c.setDimensions({ width, height }, { cssOnly: true });
     c.setViewportTransform([dpr, 0, 0, dpr, 0, 0]);
 
+    // Selection handles take the --selection token, so they follow the theme
+    // like the rest of the interface (the canvas cannot read a CSS variable).
+    const selection =
+      getComputedStyle(document.documentElement).getPropertyValue("--selection").trim() || "#4977ed";
+
     // Custom control appearance — applied per-object via object:added
     const CONTROL_STYLE = {
       transparentCorners: false,
-      borderColor: "#6366f1",
+      borderColor: selection,
       borderScaleFactor: 1.5,
       padding: 6,
       cornerSize: 14,
       cornerColor: "#ffffff",
-      cornerStrokeColor: "#6366f1",
+      cornerStrokeColor: selection,
       cornerStyle: "circle" as const,
     };
 
-    // Custom render for corner controls (white circles with accent stroke)
+    // Custom render for corner controls (white circles with a selection-colour stroke)
     const renderCircleCorner = (
       ctx: CanvasRenderingContext2D,
       left: number,
@@ -63,7 +68,7 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
       ctx.beginPath();
       ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#6366f1";
+      ctx.strokeStyle = selection;
       ctx.lineWidth = 2;
       ctx.fill();
       ctx.stroke();
@@ -86,7 +91,7 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
         ctx.beginPath();
         ctx.roundRect(-w / 2, -h / 2, w, h, 4);
         ctx.fillStyle = "#ffffff";
-        ctx.strokeStyle = "#6366f1";
+        ctx.strokeStyle = selection;
         ctx.lineWidth = 2;
         ctx.fill();
         ctx.stroke();
@@ -158,7 +163,7 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
 
   return (
     <div
-      class={`shadow-lg rounded-lg overflow-hidden ${isActive ? "ring-2 ring-[#6366f1]" : ""}`}
+      class={`ring-1 ring-border ${isActive ? "outline-2 outline-offset-4 outline-selection" : ""}`}
       style={{ width, height }}
     >
       <canvas ref={canvasElRef} />

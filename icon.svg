@@ -1,11 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
-  <rect width="180" height="180" rx="32" fill="#1e1b4b"/>
-  <rect x="40" y="50" width="100" height="80" rx="8" fill="none" stroke="#818cf8" stroke-width="4"/>
-  <rect x="50" y="60" width="35" height="25" rx="4" fill="#6366f1"/>
-  <rect x="95" y="60" width="35" height="25" rx="4" fill="#a78bfa"/>
-  <rect x="50" y="95" width="80" height="8" rx="4" fill="#4f46e5"/>
-  <rect x="50" y="113" width="55" height="6" rx="3" fill="#6366f1" opacity="0.6"/>
-  <circle cx="145" cy="45" r="16" fill="#f59e0b"/>
-  <path d="M140 45 l5-8 l5 8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <line x1="145" y1="37" x2="145" y2="45" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+<!-- The app's identity object: a squircle in the accent hue with a white glyph.
+     An asset cannot read a CSS custom property, so the accent is written out
+     here; it is the same value as --accent in src/client/styles.css. -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#DF3656"/>
+  <rect x="14" y="14" width="36" height="36" rx="4" fill="#fff"/>
+  <circle cx="26" cy="27" r="5.5" fill="#DF3656"/>
+  <path d="M30 44l8-13 8 13H30z" fill="#DF3656"/>
+  <rect x="18" y="40" width="9" height="4" rx="2" fill="#DF3656" fill-opacity="0.45"/>
 </svg>

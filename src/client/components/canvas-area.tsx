@@ -102,8 +102,7 @@ export function CanvasArea() {
   return (
     <div
       ref={wrapperRef}
-      class="flex-1 overflow-auto"
-      style={{ background: "#E8EAEF" }}
+      class="flex-1 overflow-auto bg-canvas"
     >
       {/* Spacer div — its dimensions match the visual (scaled) size so overflow scrollbars work */}
       <div
@@ -152,8 +151,7 @@ export function CanvasArea() {
                 {renamingId === page.id ? (
                   <input
                     ref={renameRef}
-                    class="text-[11px] text-zinc-700 bg-white border border-[#6366f1] rounded px-1.5 py-0.5 outline-none font-medium"
-                    style={{ width: 140 }}
+                    class="field h-6 w-[8.75rem] px-1.5 text-label"
                     value={renameValue}
                     onInput={(e) => setRenameValue((e.target as HTMLInputElement).value)}
                     onBlur={finishRename}
@@ -164,7 +162,7 @@ export function CanvasArea() {
                   />
                 ) : (
                   <span
-                    class="text-[11px] text-zinc-400 font-medium cursor-pointer hover:text-zinc-600 transition-colors"
+                    class="text-label text-muted cursor-text hover:text-foreground"
                     onClick={() => startRename(page.id, page.title)}
                   >
                     {page.title}
@@ -175,24 +173,27 @@ export function CanvasArea() {
               {/* Action icons — visible on hover */}
               <div class="flex items-center gap-0.5">
                 <button
-                  class="p-1 rounded bg-transparent border-none cursor-pointer text-zinc-400 hover:text-[#6366f1] hover:bg-[#6366f1]/10 transition-all"
+                  class="btn btn-ghost btn-icon"
                   onClick={() => addPage(page.id)}
                   title="Add page below"
+                  aria-label="Add page below"
                 >
                   <Plus size={14} />
                 </button>
                 <button
-                  class="p-1 rounded bg-transparent border-none cursor-pointer text-zinc-400 hover:text-[#6366f1] hover:bg-[#6366f1]/10 transition-all"
+                  class="btn btn-ghost btn-icon"
                   onClick={() => duplicatePage(page.id)}
                   title="Duplicate page"
+                  aria-label="Duplicate page"
                 >
                   <Copy size={14} />
                 </button>
                 {pages.length > 1 && (
                   <button
-                    class="p-1 rounded bg-transparent border-none cursor-pointer text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                    class="btn btn-ghost btn-icon is-danger"
                     onClick={() => deletePage(page.id)}
                     title="Delete page"
+                    aria-label="Delete page"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -222,7 +223,7 @@ export function CanvasArea() {
             }}
           >
             <button
-              class="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-dashed border-zinc-300 bg-transparent cursor-pointer text-xs text-zinc-400 font-medium transition-all hover:border-[#6366f1] hover:text-[#6366f1] hover:bg-[#6366f1]/5"
+              class="dropzone border-faint flex items-center gap-1.5 h-8 px-4 rounded-sm text-label"
               onClick={() => addPage()}
             >
               <Plus size={14} />

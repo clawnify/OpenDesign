@@ -114,20 +114,21 @@ export function Toolbar() {
   };
 
   return (
-    <div class="flex items-center justify-between px-3 py-1.5 bg-white border-b border-zinc-200 shrink-0">
+    <div class="flex h-14 items-center justify-between gap-3 px-3 bg-surface border-b border-border shrink-0">
       {/* Left: Home + Design name + Canvas size */}
       <div class="flex items-center gap-3">
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900"
+          class="btn btn-ghost btn-icon"
           onClick={() => navigate("/")}
           title="Back to designs"
+          aria-label="Back to designs"
         >
           <Home size={16} />
         </button>
         {activeDesign && (
           editingName ? (
             <input
-              class="bg-zinc-100 border border-accent rounded px-2 py-0.5 text-xs text-zinc-900 outline-none w-40"
+              class="field h-7 w-48"
               value={nameValue}
               onInput={(e) => setNameValue((e.target as HTMLInputElement).value)}
               onBlur={finishRename}
@@ -139,7 +140,8 @@ export function Toolbar() {
             />
           ) : (
             <span
-              class="text-xs font-semibold text-zinc-600 cursor-pointer hover:text-zinc-900 transition-colors"
+              class="text-heading-3 text-foreground cursor-text truncate max-w-[16rem]"
+              title="Double-click to rename"
               onDblClick={startRename}
             >
               {activeDesign.name}
@@ -149,36 +151,34 @@ export function Toolbar() {
 
         <div class="relative">
           <button
-            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-zinc-400 bg-zinc-100 border border-zinc-300 cursor-pointer hover:text-zinc-900 hover:border-zinc-500 transition-all"
+            class="btn btn-secondary pl-2.5 pr-2"
+            aria-expanded={showSizeDropdown}
             onClick={() => (showSizeDropdown ? setShowSizeDropdown(false) : openSizeMenu())}
           >
             {sizeLabel}
-            <ChevronDown size={12} />
+            <ChevronDown size={14} class="text-muted" />
           </button>
           {showSizeDropdown && (
             <>
               <div class="fixed inset-0 z-10" onClick={() => setShowSizeDropdown(false)} />
-              <div class="absolute top-full left-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-xl z-20 min-w-[240px] py-1">
+              <div class="menu absolute top-full left-0 mt-1 z-20 min-w-[16rem]">
                 {Object.entries(groups).map(([group, sizes]) => (
                   <div key={group}>
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    <div class="menu-label">
                       {group}
                     </div>
                     {sizes.map((s) => (
                       <button
                         key={s.label}
-                        class={`w-full text-left px-3 py-1.5 text-xs cursor-pointer border-none transition-colors ${
-                          s.width === canvasWidth && s.height === canvasHeight
-                            ? "bg-accent/20 text-accent"
-                            : "text-zinc-600 bg-transparent hover:bg-zinc-100"
-                        }`}
+                        class="menu-item"
+                        aria-selected={s.width === canvasWidth && s.height === canvasHeight}
                         onClick={() => {
                           setCanvasSize(s.width, s.height);
                           setShowSizeDropdown(false);
                         }}
                       >
-                        <span class="font-medium">{s.label}</span>
-                        <span class="text-zinc-400 ml-2">
+                        <span>{s.label}</span>
+                        <span class="ml-auto text-fine text-muted tabular-nums">
                           {s.width} x {s.height}
                         </span>
                       </button>
@@ -186,26 +186,26 @@ export function Toolbar() {
                   </div>
                 ))}
 
-                <div class="mt-1 pt-2 border-t border-zinc-200 px-3 pb-1">
-                  <div class="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                <div class="mt-1 pt-1 border-t border-border px-2 pb-1.5">
+                  <div class="menu-label px-0">
                     Custom
                   </div>
                   <div class="flex items-center gap-1.5">
                     <input
                       type="number"
                       aria-label="Custom width in pixels"
-                      class="w-[68px] bg-zinc-100 border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 outline-none focus:border-accent"
+                      class="field h-7 w-[4.75rem] tabular-nums"
                       value={customWidth}
                       min={MIN_CANVAS_SIDE}
                       max={MAX_CANVAS_SIDE}
                       onInput={(e) => setCustomWidth((e.target as HTMLInputElement).value)}
                       onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
                     />
-                    <span class="text-zinc-400 text-xs">x</span>
+                    <span class="text-body-sm text-muted">×</span>
                     <input
                       type="number"
                       aria-label="Custom height in pixels"
-                      class="w-[68px] bg-zinc-100 border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 outline-none focus:border-accent"
+                      class="field h-7 w-[4.75rem] tabular-nums"
                       value={customHeight}
                       min={MIN_CANVAS_SIDE}
                       max={MAX_CANVAS_SIDE}
@@ -213,7 +213,7 @@ export function Toolbar() {
                       onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
                     />
                     <button
-                      class="px-2.5 py-1 rounded text-xs font-medium text-white bg-accent border-none cursor-pointer hover:opacity-90 transition-opacity"
+                      class="btn btn-secondary"
                       onClick={applyCustomSize}
                     >
                       Resize
@@ -227,11 +227,11 @@ export function Toolbar() {
 
         {canUndoResize && (
           <button
-            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-zinc-500 bg-transparent border border-zinc-300 cursor-pointer hover:text-zinc-900 hover:border-zinc-500 transition-all"
+            class="btn btn-ghost"
             onClick={undoResize}
             title="Restore the previous size and layout"
           >
-            <RotateCcw size={11} />
+            <RotateCcw size={14} />
             Undo resize
           </button>
         )}
@@ -240,18 +240,20 @@ export function Toolbar() {
       {/* Center: Undo / Redo */}
       <div class="flex items-center gap-1">
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed"
+          class="btn btn-ghost btn-icon"
           onClick={undo}
           disabled={!canUndo}
           title="Undo (Cmd+Z)"
+          aria-label="Undo"
         >
           <Undo2 size={16} />
         </button>
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed"
+          class="btn btn-ghost btn-icon"
           onClick={redo}
           disabled={!canRedo}
           title="Redo (Cmd+Shift+Z)"
+          aria-label="Redo"
         >
           <Redo2 size={16} />
         </button>
@@ -260,78 +262,82 @@ export function Toolbar() {
       {/* Right: Zoom + Export + Save */}
       <div class="flex items-center gap-1.5">
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900"
+          class="btn btn-ghost btn-icon"
           onClick={zoomOut}
           title="Zoom out"
+          aria-label="Zoom out"
         >
           <ZoomOut size={15} />
         </button>
-        <span class="text-[11px] text-zinc-400 font-mono w-10 text-center">
+        <span class="text-label text-muted tabular-nums w-12 text-center">
           {Math.round((zoom / (fitScale || 1)) * 100)}%
         </span>
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900"
+          class="btn btn-ghost btn-icon"
           onClick={zoomIn}
           title="Zoom in"
+          aria-label="Zoom in"
         >
           <ZoomIn size={15} />
         </button>
         <button
-          class="p-1.5 rounded-md text-zinc-400 bg-transparent border-none cursor-pointer transition-all hover:bg-zinc-100 hover:text-zinc-900"
+          class="btn btn-ghost btn-icon"
           onClick={zoomToFit}
           title="Fit to screen"
+          aria-label="Fit to screen"
         >
           <Maximize size={15} />
         </button>
 
-        <div class="w-px h-5 bg-zinc-300 mx-1" />
+        <div class="w-px h-5 bg-border mx-1" />
 
         <div class="relative">
           <button
-            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 cursor-pointer transition-all bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50"
+            class="btn btn-secondary"
+            aria-expanded={showExportMenu}
             onClick={() => setShowExportMenu(!showExportMenu)}
             disabled={exporting || !activeDesign}
             title="Export this design"
           >
-            {exporting ? <span class="spinner" /> : <Download size={13} />}
-            {exporting ? "Preparing..." : "Export"}
-            <ChevronDown size={12} />
+            <Download size={14} />
+            {exporting ? "Preparing…" : "Export"}
+            <ChevronDown size={14} class="text-muted" />
           </button>
           {showExportMenu && (
             <>
               <div class="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
-              <div class="absolute top-full right-0 mt-1 bg-white border border-zinc-300 rounded-lg shadow-xl z-20 min-w-[230px] py-1">
+              <div class="menu absolute top-full right-0 mt-1 z-20 min-w-[15rem]">
                 <button
-                  class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                  class="menu-item items-start gap-2.5"
                   onClick={() => runExport(() => exportPDF(pageIds, designName))}
                 >
-                  <FileText size={14} class="mt-0.5 shrink-0 text-accent" />
+                  <FileText size={14} class="mt-0.5 shrink-0 text-muted" />
                   <span>
-                    <span class="block font-medium text-zinc-900">Carousel PDF</span>
-                    <span class="block text-[10px] text-zinc-400">
+                    <span class="block font-medium">Carousel PDF</span>
+                    <span class="block text-fine text-muted">
                       All {pages.length} {pages.length === 1 ? "page" : "pages"}, ready for LinkedIn
                     </span>
                   </span>
                 </button>
                 <button
-                  class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                  class="menu-item items-start gap-2.5"
                   onClick={() => runExport(() => exportPNG(designName))}
                 >
-                  <ImageIcon size={14} class="mt-0.5 shrink-0 text-zinc-400" />
+                  <ImageIcon size={14} class="mt-0.5 shrink-0 text-muted" />
                   <span>
-                    <span class="block font-medium text-zinc-900">This page</span>
-                    <span class="block text-[10px] text-zinc-400">PNG at 2x</span>
+                    <span class="block font-medium">This page</span>
+                    <span class="block text-fine text-muted">PNG at 2x</span>
                   </span>
                 </button>
                 {pages.length > 1 && (
                   <button
-                    class="w-full flex items-start gap-2.5 text-left px-3 py-2 text-xs text-zinc-600 bg-transparent border-none cursor-pointer transition-colors hover:bg-zinc-100"
+                    class="menu-item items-start gap-2.5"
                     onClick={() => runExport(() => exportAllPNG(pageIds, designName))}
                   >
-                    <Images size={14} class="mt-0.5 shrink-0 text-zinc-400" />
+                    <Images size={14} class="mt-0.5 shrink-0 text-muted" />
                     <span>
-                      <span class="block font-medium text-zinc-900">All pages</span>
-                      <span class="block text-[10px] text-zinc-400">{pages.length} separate PNGs at 2x</span>
+                      <span class="block font-medium">All pages</span>
+                      <span class="block text-fine text-muted">{pages.length} separate PNGs at 2x</span>
                     </span>
                   </button>
                 )}
@@ -340,9 +346,10 @@ export function Toolbar() {
           )}
         </div>
         {activeDesign && (
-          <label class="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 whitespace-nowrap cursor-pointer" title="Save changes automatically after a short pause">
+          <label class="inline-flex items-center gap-1.5 text-label text-muted whitespace-nowrap cursor-pointer" title="Save changes automatically after a short pause">
             <input
               type="checkbox"
+              class="accent-foreground"
               checked={autoSave}
               onChange={(e) => {
                 setAutoSave(e.currentTarget.checked);
@@ -353,9 +360,10 @@ export function Toolbar() {
           </label>
         )}
         {activeDesign && (
-          <label class="inline-flex items-center gap-1.5 text-[11px] text-zinc-500 whitespace-nowrap cursor-pointer" title="Offer this design under Start from a template. Starting from it copies every page.">
+          <label class="inline-flex items-center gap-1.5 text-label text-muted whitespace-nowrap cursor-pointer" title="Offer this design under Start from a template. Starting from it copies every page.">
             <input
               type="checkbox"
+              class="accent-foreground"
               checked={Boolean(activeDesign.is_template)}
               onChange={(e) => void setDesignTemplate(activeDesign.id, e.currentTarget.checked)}
             />
@@ -363,17 +371,17 @@ export function Toolbar() {
           </label>
         )}
         {activeDesign && (
-          <span class={`text-[10px] whitespace-nowrap ${saveStatus === "error" ? "text-red-500" : "text-zinc-400"}`} aria-live="polite">
+          <span class={`text-fine whitespace-nowrap ${saveStatus === "error" ? "text-danger" : "text-muted"}`} aria-live="polite">
             {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : autoSave ? "All changes saved" : ""}
           </span>
         )}
         <button
-          class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-md text-[11px] font-semibold border-none cursor-pointer transition-all bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
+          class="btn btn-primary"
           onClick={saveDesign}
           disabled={saving || !activeDesign}
         >
-          {saving ? <span class="spinner !border-white/30 !border-t-white" /> : <Save size={13} />}
-          {saving ? "Saving..." : "Save"}
+          <Save size={14} />
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
     </div>

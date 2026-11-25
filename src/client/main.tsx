@@ -9,4 +9,10 @@ import "./styles.css";
 // `fitFontSize` are the fit-to-lines setting (lib/fit-text.ts).
 fabric.FabricObject.customProperties = ["fieldName", "maxLines", "fitFontSize"];
 
+// Agent mode (`?agent` in the address): bigger targets and every hover-only
+// control shown, from the [data-agent] rules in styles.css.
+if (new URLSearchParams(window.location.search).has("agent")) {
+  document.documentElement.dataset.agent = "";
+}
+
 render(<App />, document.getElementById("app")!);

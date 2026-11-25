@@ -74,7 +74,7 @@ export function App() {
   if (fontState.fontsError) {
     return <div class="flex flex-col items-center justify-center gap-3 h-full" role="alert">
       <p>{fontState.fontsError}</p>
-      <button class="px-3 py-2 border rounded cursor-pointer" onClick={() => window.location.reload()}>Reload</button>
+      <button class="btn btn-secondary" onClick={() => window.location.reload()}>Reload</button>
     </div>;
   }
 
@@ -83,11 +83,8 @@ export function App() {
     return (
       <>
       {hostNav}
-      <div class="flex items-center justify-center h-full bg-[#F3F4F7]">
-        <div class="text-center">
-          <div class="spinner !w-6 !h-6 !border-accent/30 !border-t-accent mb-3 mx-auto" />
-          <p class="text-zinc-400 text-sm">Loading...</p>
-        </div>
+      <div class="flex items-center justify-center h-full bg-background">
+        <p class="text-body-sm text-muted">Loading…</p>
       </div>
       </>
     );

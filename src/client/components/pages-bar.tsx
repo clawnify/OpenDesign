@@ -28,9 +28,9 @@ function PageThumb({ page, width, height }: { page: Page; width: number; height:
   }, [page.canvas_json, width, height]);
 
   return src ? (
-    <img src={src} class="rounded w-full h-full object-cover" alt={page.title} />
+    <img src={src} class="rounded-xs w-full h-full object-cover" alt={page.title} />
   ) : (
-    <div class="rounded w-full h-full bg-zinc-100" />
+    <div class="rounded-xs w-full h-full bg-surface-sunken" />
   );
 }
 
@@ -89,35 +89,35 @@ export function PagesBar() {
   if (pages.length === 0) return null;
 
   return (
-    <div class="bg-white border-t border-zinc-200 shrink-0">
+    <div class="bg-surface border-t border-border shrink-0">
       {/* Collapsed bar — always visible */}
       <button
-        class="w-full flex items-center justify-between px-4 py-1.5 bg-transparent border-none cursor-pointer hover:bg-zinc-50 transition-colors"
+        class="w-full h-8 flex items-center justify-between px-4 bg-transparent border-none cursor-pointer hover:bg-surface-sunken"
+        aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
       >
-        <span class="text-[11px] text-zinc-400 font-medium">
+        <span class="text-label text-muted">
           Pages ({pages.length})
         </span>
         {expanded ? (
-          <ChevronDown size={14} class="text-zinc-400" />
+          <ChevronDown size={14} class="text-muted" />
         ) : (
-          <ChevronUp size={14} class="text-zinc-400" />
+          <ChevronUp size={14} class="text-muted" />
         )}
       </button>
 
       {/* Expanded thumbnail strip */}
       {expanded && (
-        <div class="flex items-center gap-2 px-4 py-2 border-t border-zinc-100 overflow-x-auto">
+        <div class="flex items-center gap-2 px-4 py-2 border-t border-border overflow-x-auto">
           {pages.map((page) => {
             const isActive = page.id === activePageId;
             return (
               <div key={page.id} class="relative flex-shrink-0 group">
                 <div
-                  class={`relative flex flex-col items-center gap-1 cursor-pointer border-2 rounded-lg p-1 transition-all bg-white ${
-                    isActive
-                      ? "border-[#6366f1] shadow-sm"
-                      : "border-zinc-200 hover:border-zinc-300"
+                  class={`relative flex flex-col items-center gap-1 cursor-pointer rounded-sm p-1 ${
+                    isActive ? "bg-surface-sunken outline-2 outline-selection" : "hover:bg-surface-sunken"
                   }`}
+                  aria-current={isActive ? "page" : undefined}
                   onClick={() => handlePageClick(page.id)}
                   style={{ width: 88 }}
                 >
@@ -125,20 +125,22 @@ export function PagesBar() {
                     <PageThumb page={page} width={canvasWidth} height={canvasHeight} />
                   </div>
                   <button
-                    class="absolute top-0.5 right-0.5 p-0.5 rounded bg-white/80 border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-100"
+                    class="absolute top-1 right-1 p-0.5 rounded-xs bg-surface/90 border-none cursor-pointer opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity hover:bg-surface-sunken"
+                    data-hover-only
+                    aria-label="Page options"
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuPageId(menuPageId === page.id ? null : page.id);
                     }}
                   >
-                    <MoreHorizontal size={12} class="text-zinc-400" />
+                    <MoreHorizontal size={14} class="text-muted" />
                   </button>
                 </div>
                 <div class="mt-0.5 text-center" style={{ width: 88 }}>
                   {renamingId === page.id ? (
                     <input
                       ref={renameRef}
-                      class="w-full text-center text-[10px] text-zinc-700 bg-zinc-100 border border-[#6366f1] rounded px-1 py-0 outline-none"
+                      class="field h-6 px-1 text-center text-fine"
                       value={renameValue}
                       onInput={(e) => setRenameValue((e.target as HTMLInputElement).value)}
                       onBlur={finishRename}
@@ -149,9 +151,7 @@ export function PagesBar() {
                     />
                   ) : (
                     <span
-                      class={`text-[10px] truncate block ${
-                        isActive ? "text-zinc-800 font-medium" : "text-zinc-500"
-                      }`}
+                      class={`text-fine truncate block ${isActive ? "text-foreground font-medium" : "text-muted"}`}
                     >
                       {page.title}
                     </span>
@@ -161,34 +161,34 @@ export function PagesBar() {
                 {menuPageId === page.id && (
                   <div
                     ref={menuRef}
-                    class="absolute bottom-full left-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-lg z-30 min-w-[130px] py-1"
+                    class="menu absolute bottom-full left-0 mb-1 z-30 min-w-[9rem]"
                   >
                     <button
-                      class="w-full text-left px-3 py-1.5 text-xs text-zinc-600 bg-transparent border-none cursor-pointer hover:bg-zinc-100 flex items-center gap-2"
+                      class="menu-item"
                       onClick={() => startRename(page.id, page.title)}
                     >
-                      <Pencil size={12} />
+                      <Pencil size={14} />
                       Rename
                     </button>
                     <button
-                      class="w-full text-left px-3 py-1.5 text-xs text-zinc-600 bg-transparent border-none cursor-pointer hover:bg-zinc-100 flex items-center gap-2"
+                      class="menu-item"
                       onClick={() => {
                         setMenuPageId(null);
                         duplicatePage(page.id);
                       }}
                     >
-                      <Copy size={12} />
+                      <Copy size={14} />
                       Duplicate
                     </button>
                     {pages.length > 1 && (
                       <button
-                        class="w-full text-left px-3 py-1.5 text-xs text-red-500 bg-transparent border-none cursor-pointer hover:bg-red-50 flex items-center gap-2"
+                        class="menu-item is-danger"
                         onClick={() => {
                           setMenuPageId(null);
                           deletePage(page.id);
                         }}
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                         Delete
                       </button>
                     )}
@@ -199,11 +199,12 @@ export function PagesBar() {
           })}
 
           <button
-            class="flex-shrink-0 flex items-center justify-center w-10 h-[62px] rounded-lg border-2 border-dashed border-zinc-300 bg-transparent cursor-pointer transition-all hover:border-[#6366f1] hover:bg-[#6366f1]/5"
+            class="dropzone flex-shrink-0 flex items-center justify-center w-10 h-[3.875rem] rounded-sm"
+            aria-label="Add page"
             onClick={() => addPage()}
             title="Add page"
           >
-            <Plus size={16} class="text-zinc-400" />
+            <Plus size={16} />
           </button>
         </div>
       )}
