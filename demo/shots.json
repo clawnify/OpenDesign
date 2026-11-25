@@ -1,0 +1,69 @@
+{
+  "shots": [
+    {
+      "name": "home",
+      "caption": "Start from a template, or pick up one of your designs.",
+      "alt": "OpenDesign's home page: a grid of templates above the recent designs."
+    },
+    {
+      "name": "editor",
+      "caption": "Design on a canvas, with templates, brand kits, text, shapes and images on the left and the selected object's settings on the right.",
+      "alt": "The OpenDesign editor with a two-page carousel open.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002"
+    },
+    {
+      "name": "pages",
+      "caption": "A design can have several pages, exported together as one carousel PDF.",
+      "alt": "The editor with the pages strip open, showing both pages of a carousel.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "steps": [
+        {
+          "click": {
+            "text": "Pages (2)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "text-settings",
+      "caption": "Every text box can be a field filled from data, and can shrink to stay on its lines.",
+      "alt": "The settings of a selected text box: field name, shrink to fit, layer order, font and size.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "steps": [
+        {
+          "click": {
+            "selector": "button[aria-pressed]",
+            "text": "Text"
+          }
+        },
+        {
+          "click": {
+            "text": "Add a heading"
+          }
+        }
+      ],
+      "clip": {
+        "selector": "aside.border-l"
+      },
+      "clip_padding": 0
+    },
+    {
+      "name": "export",
+      "caption": "Export one page as a PNG at 2x, every page, or the whole carousel as one PDF.",
+      "alt": "The export menu: carousel PDF, this page and all pages.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "steps": [
+        {
+          "click": {
+            "selector": "button[aria-expanded]",
+            "text": "Export"
+          }
+        }
+      ],
+      "clip": {
+        "selector": ".menu"
+      },
+      "clip_padding": 24
+    }
+  ]
+}
