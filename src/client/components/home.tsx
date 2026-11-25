@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit3, Sparkles } from "lucide-preact";
 import type { Design, Template } from "../types";
 import { api } from "../api";
 import { TemplateCard } from "./template-card";
+import { CanvasPreview } from "./canvas-preview";
 
 interface HomeProps {
   designs: Design[];
@@ -106,30 +107,49 @@ export function Home({
         ) : (
           <>
             <h2 class="text-heading-2 text-foreground mb-3 m-0">Recent designs</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {designs.map((d) => (
                 <div
                   key={d.id}
-                  class="card is-interactive cursor-pointer group"
+                  class="card is-interactive flex flex-col cursor-pointer group"
                   onClick={() => navigate(`/design/${d.id}`)}
                 >
                   {/* Preview area */}
-                  <div class="aspect-[4/3] bg-surface-sunken flex items-center justify-center">
-                    {d.thumbnail_url ? (
-                      <img
-                        src={d.thumbnail_url}
-                        alt={d.name}
-                        class="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div class="text-fine text-faint tabular-nums">
-                        {d.width} x {d.height}
-                      </div>
-                    )}
+                  {d.thumbnail_url ? (
+                    <div class="aspect-square bg-surface-sunken flex items-center justify-center">
+                      <img src={d.thumbnail_url} alt={d.name} class="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <CanvasPreview json={d.canvas_json} width={d.width} height={d.height} alt={d.name} />
+                  )}
+
+                  {/* The card's actions sit on the preview's corner, so the
+                      caption below keeps its whole width for the name. */}
+                  <div
+                    class="absolute top-2 right-2 z-10 flex gap-0.5 p-0.5 rounded-sm bg-surface shadow-raised opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                    data-hover-only
+                  >
+                    <button
+                      class="btn btn-ghost btn-icon"
+                      aria-label="Rename"
+                      onClick={(e) => startRename(d.id, d.name, e)}
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-icon is-danger"
+                      aria-label="Delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteDesign(d.id);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
 
                   {/* Info */}
-                  <div class="p-3">
+                  <div class="flex-1 px-2.5 py-2 border-t border-border">
                     {editingId === d.id ? (
                       <input
                         class="field h-7"
@@ -144,36 +164,12 @@ export function Home({
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <div class="flex items-start justify-between">
-                        <div class="min-w-0 flex-1">
-                          <p class="text-body-sm font-medium text-foreground truncate m-0">
-                            {d.name}
-                          </p>
-                          <p class="text-fine text-muted tabular-nums mt-0.5 m-0">
-                            {d.width} x {d.height} &middot;{" "}
-                            {new Date(d.updated_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ml-2 shrink-0" data-hover-only>
-                          <button
-                            class="btn btn-ghost btn-icon"
-                            aria-label="Rename"
-                            onClick={(e) => startRename(d.id, d.name, e)}
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
-                            class="btn btn-ghost btn-icon is-danger"
-                            aria-label="Delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteDesign(d.id);
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
+                      <>
+                        <p class="text-label text-foreground line-clamp-2 hyphens-auto break-words m-0">{d.name}</p>
+                        <p class="text-fine text-muted tabular-nums mt-0.5 m-0">
+                          {d.width}&times;{d.height} &middot; {new Date(d.updated_at).toLocaleDateString()}
+                        </p>
+                      </>
                     )}
                   </div>
                 </div>

@@ -10,10 +10,10 @@ import {
   FlipVertical,
   Trash2,
   Copy,
-  BringToFront,
-  MoveUp,
-  MoveDown,
-  SendToBack,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from "lucide-preact";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
@@ -68,13 +68,13 @@ function FitLinesInput({
 
   return (
     <div>
-      <label class="field-label">Fit on lines</label>
+      <label class="field-label">Shrink to fit</label>
       <input
         type="number"
         min={1}
         max={20}
         placeholder="Off"
-        title="Shrinks the text so a longer value stays on this many lines"
+        aria-label="Shrink to fit: most lines"
         class="field"
         value={draft}
         onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
@@ -83,6 +83,9 @@ function FitLinesInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
       />
+      <p class="text-fine text-muted mt-1.5">
+        The most lines this text may take. Longer text gets smaller instead of wrapping.
+      </p>
     </div>
   );
 }
@@ -144,24 +147,42 @@ export function RightSidebar() {
   const objects = canvas?.getObjects() ?? [];
   const layerIndex = selectedObject ? objects.indexOf(selectedObject) : -1;
   const layerCount = objects.length;
+  const backgroundHex =
+    typeof canvas?.backgroundColor === "string" && /^#[0-9a-f]{6}$/i.test(canvas.backgroundColor)
+      ? canvas.backgroundColor.toLowerCase()
+      : "#ffffff";
 
   if (!selectedObject) {
     return (
       <aside class="w-[17.5rem] bg-surface border-l border-border flex flex-col shrink-0">
-        <div class="h-12 px-4 flex items-center shrink-0 border-b border-border">
+        <div class="h-12 px-4 flex items-center shrink-0">
           <h2 class="text-heading-3 text-foreground m-0">Canvas</h2>
         </div>
-        <div class="p-4 flex flex-col gap-3">
+        <div class="px-4 pb-4 flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <span class="text-label text-muted">Dimensions</span>
             <span class="text-label text-foreground tabular-nums">{canvasWidth} x {canvasHeight}</span>
           </div>
-          <label class="field-label mb-0">Background color</label>
-          <input
-            type="color"
-            class="swatch w-full h-8"
-            onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
-          />
+          <span class="field-label mb-0">Background color</span>
+          <div class="flex items-center gap-2">
+            <input
+              type="color"
+              class="swatch w-8 h-8 shrink-0"
+              aria-label="Background color"
+              value={backgroundHex}
+              onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
+            />
+            <input
+              type="text"
+              class="field flex-1 font-mono"
+              aria-label="Background color, hex"
+              value={backgroundHex}
+              onChange={(e) => {
+                const v = (e.target as HTMLInputElement).value.trim();
+                if (/^#[0-9a-f]{6}$/i.test(v)) setBackground("color", v);
+              }}
+            />
+          </div>
           <BrandSwatches onPick={(color) => setBackground("color", color)} />
         </div>
       </aside>
@@ -171,7 +192,7 @@ export function RightSidebar() {
   return (
     <aside class="w-[17.5rem] bg-surface border-l border-border flex flex-col shrink-0 overflow-y-auto">
       {/* Header */}
-      <div class="h-12 px-4 flex items-center justify-between shrink-0 border-b border-border">
+      <div class="h-12 px-4 flex items-center justify-between shrink-0">
         <h2 class="text-heading-3 text-foreground m-0">
           {isText ? "Text" : isImage ? "Image" : "Shape"}
         </h2>
@@ -201,7 +222,7 @@ export function RightSidebar() {
         </div>
       </div>
 
-      <div class="p-4 flex flex-col gap-4">
+      <div class="px-4 pb-4 flex flex-col gap-4">
         {/* ── Template field ────────────────────────────────────────── */}
         {(isText || isImage) && (
           <FieldNameInput
@@ -225,23 +246,22 @@ export function RightSidebar() {
 
         <div>
           <label class="field-label">Layer order</label>
-          <div class="flex gap-1.5">
+          <div class="grid grid-cols-2 gap-1.5">
             {([
-              ["front", BringToFront, "To front", layerIndex === layerCount - 1],
-              ["forward", MoveUp, "Forward", layerIndex === layerCount - 1],
-              ["backward", MoveDown, "Backward", layerIndex <= 0],
-              ["back", SendToBack, "To back", layerIndex <= 0],
+              ["forward", ArrowUp, "Forward", layerIndex === layerCount - 1],
+              ["backward", ArrowDown, "Backward", layerIndex <= 0],
+              ["front", ArrowUpToLine, "To front", layerIndex === layerCount - 1],
+              ["back", ArrowDownToLine, "To back", layerIndex <= 0],
             ] as const).map(([action, Icon, label, disabled]) => (
               <button
                 key={action}
                 type="button"
-                class="btn btn-secondary flex-1 px-0"
-                title={label}
-                aria-label={label}
+                class="btn btn-secondary w-full"
                 disabled={layerIndex < 0 || disabled}
                 onClick={() => changeLayer(action)}
               >
-                <Icon size={14} />
+                <Icon size={16} />
+                {label}
               </button>
             ))}
           </div>

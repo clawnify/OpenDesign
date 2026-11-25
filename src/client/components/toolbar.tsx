@@ -194,7 +194,7 @@ export function Toolbar() {
                     <input
                       type="number"
                       aria-label="Custom width in pixels"
-                      class="field h-7 w-[4.75rem] tabular-nums"
+                      class="field w-[4.75rem] tabular-nums"
                       value={customWidth}
                       min={MIN_CANVAS_SIDE}
                       max={MAX_CANVAS_SIDE}
@@ -205,7 +205,7 @@ export function Toolbar() {
                     <input
                       type="number"
                       aria-label="Custom height in pixels"
-                      class="field h-7 w-[4.75rem] tabular-nums"
+                      class="field w-[4.75rem] tabular-nums"
                       value={customHeight}
                       min={MIN_CANVAS_SIDE}
                       max={MAX_CANVAS_SIDE}

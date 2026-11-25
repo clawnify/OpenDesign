@@ -108,7 +108,7 @@ export function PagesBar() {
 
       {/* Expanded thumbnail strip */}
       {expanded && (
-        <div class="flex items-center gap-2 px-4 py-2 border-t border-border overflow-x-auto">
+        <div class="flex items-start gap-2 px-4 py-2 border-t border-border overflow-x-auto">
           {pages.map((page) => {
             const isActive = page.id === activePageId;
             return (
@@ -198,13 +198,19 @@ export function PagesBar() {
             );
           })}
 
+          {/* Built like a page (a tile, then its name) so its top and its label
+              line up with the pages beside it. The tile is a page tile's size:
+              88px wide, a 50px thumbnail plus 4px padding above and below. */}
           <button
-            class="dropzone flex-shrink-0 flex items-center justify-center w-10 h-[3.875rem] rounded-sm"
-            aria-label="Add page"
+            class="group flex-shrink-0 flex flex-col p-0 bg-transparent border-none cursor-pointer"
             onClick={() => addPage()}
-            title="Add page"
           >
-            <Plus size={16} />
+            <span class="dropzone flex items-center justify-center rounded-sm group-hover:bg-surface-sunken group-hover:text-foreground" style={{ width: 88, height: 58 }}>
+              <Plus size={16} />
+            </span>
+            <span class="mt-0.5 text-fine text-muted text-center group-hover:text-foreground" style={{ width: 88 }}>
+              Add page
+            </span>
           </button>
         </div>
       )}

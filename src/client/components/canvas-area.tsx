@@ -223,7 +223,7 @@ export function CanvasArea() {
             }}
           >
             <button
-              class="dropzone border-faint flex items-center gap-1.5 h-8 px-4 rounded-sm text-label"
+              class="dropzone border-faint flex items-center gap-1.5 h-7 px-3 rounded-sm text-label"
               onClick={() => addPage()}
             >
               <Plus size={14} />
