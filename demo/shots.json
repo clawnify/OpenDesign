@@ -43,7 +43,8 @@
         }
       ],
       "clip": {
-        "selector": "aside.border-l"
+        "selector": "aside",
+        "text": "Shrink to fit"
       },
       "clip_padding": 0
     },
@@ -64,6 +65,42 @@
         "selector": ".menu"
       },
       "clip_padding": 24
+    },
+    {
+      "name": "templates",
+      "caption": "Start from a template, including the designs you save as your own.",
+      "alt": "The editor's tool rail and templates panel.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "clip": {
+        "selector": "aside",
+        "text": "Click a template to apply"
+      },
+      "clip_padding": 0
+    },
+    {
+      "name": "brand-kit",
+      "caption": "A brand kit keeps your colours, fonts and logos, and applies them to a page in one click.",
+      "alt": "The brand kit panel with a kit's colours, heading and body fonts.",
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "steps": [
+        {
+          "click": {
+            "selector": "button[aria-pressed]",
+            "text": "Brand"
+          }
+        }
+      ],
+      "clip": {
+        "selector": "aside",
+        "text": "Apply to this page"
+      },
+      "clip_padding": 0
+    },
+    {
+      "name": "announcement",
+      "caption": "Landscape posts at LinkedIn's own size, 1200 by 627.",
+      "alt": "A landscape open-day announcement open in the editor.",
+      "path": "/design/a1b2c3d4-0001-4000-8000-000000000001"
     }
   ]
 }
