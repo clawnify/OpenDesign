@@ -15,7 +15,7 @@ const TEXT_PRESETS = {
 } as const;
 
 const SHAPE_DEFAULTS = {
-  fill: "#6366f1",
+  fill: "#9a9893",
   stroke: "",
   strokeWidth: 0,
   opacity: 1,
@@ -234,7 +234,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
           break;
         case "line":
           obj = new fabric.Line([cx - 100, cy, cx + 100, cy], {
-            stroke: "#6366f1",
+            stroke: "#1b1a19",
             strokeWidth: 3,
             fill: "",
           });

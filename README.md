@@ -18,7 +18,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 - **Template fields** — name any text or image object, then fill it from data or an agent over the API; one name can drive several objects and pages at once
 - **Variables inside text** — write `{{name}}` in a sentence and fill only that part; the value keeps the variable's colour and weight
-- **Fit on lines** — a text can shrink so a longer value stays on the lines the layout has room for
+- **Shrink to fit** — a text can shrink so a longer value stays on the lines the layout has room for
 - **Your own templates** — mark any design as a template and start new designs from it, every page included
 - **Fabric.js canvas** — full object manipulation with retina/HiDPI rendering (2x device pixel ratio)
 - **Pre-built templates** — LinkedIn-optimized: Quote Card, Stats Highlight, Announcement, Tips List, Profile Card, Minimal Text
@@ -214,9 +214,9 @@ sentence keeps its own, so a blue `{{to_label}}` fills blue with grey words
 around it. A whole-object field follows the same rule: its new text takes the
 style of the old text's first character.
 
-### Fit on lines
+### Shrink to fit
 
-Set **Fit on lines** on a text (`maxLines` in the JSON) and a longer value
+Set **Shrink to fit** on a text (`maxLines` in the JSON) and a longer value
 shrinks to stay on that many lines instead of wrapping into the next element.
 It never goes below 40% of the designed size, and grows back when the value is
 short again.

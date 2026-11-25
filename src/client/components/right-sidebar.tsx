@@ -10,10 +10,10 @@ import {
   FlipVertical,
   Trash2,
   Copy,
-  BringToFront,
-  MoveUp,
-  MoveDown,
-  SendToBack,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from "lucide-preact";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
@@ -32,7 +32,7 @@ function BrandSwatches({ onPick }: { onPick: (color: string) => void }) {
       {activeBrandKit.colors.map((color, i) => (
         <button
           key={`${color}-${i}`}
-          class="w-5 h-5 rounded border border-zinc-300 cursor-pointer transition-all hover:scale-110 hover:border-accent"
+          class="swatch w-5 h-5"
           style={{ background: color }}
           title={`${activeBrandKit.name} — ${color}`}
           aria-label={`Use brand color ${color}`}
@@ -68,14 +68,14 @@ function FitLinesInput({
 
   return (
     <div>
-      <label class="text-[11px] text-zinc-400 mb-1 block">Fit on lines</label>
+      <label class="field-label">Shrink to fit</label>
       <input
         type="number"
         min={1}
         max={20}
         placeholder="Off"
-        title="Shrinks the text so a longer value stays on this many lines"
-        class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent"
+        aria-label="Shrink to fit: most lines"
+        class="field"
         value={draft}
         onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
         onBlur={commit}
@@ -83,6 +83,9 @@ function FitLinesInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
       />
+      <p class="text-fine text-muted mt-1.5">
+        The most lines this text may take. Longer text gets smaller instead of wrapping.
+      </p>
     </div>
   );
 }
@@ -113,11 +116,11 @@ function FieldNameInput({
 
   return (
     <div>
-      <label class="text-[11px] text-zinc-400 mb-1 block">Field name</label>
+      <label class="field-label">Field name</label>
       <input
         type="text"
         placeholder="e.g. headline"
-        class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent font-mono"
+        class="field font-mono"
         value={draft}
         onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
         onBlur={commit}
@@ -125,7 +128,7 @@ function FieldNameInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
       />
-      <p class="text-[10px] text-zinc-400 mt-1 leading-snug">
+      <p class="text-fine text-muted mt-1.5">
         {saved
           ? "Fillable through the design's /fill endpoint."
           : "Name it to fill it from data or an agent."}
@@ -144,24 +147,42 @@ export function RightSidebar() {
   const objects = canvas?.getObjects() ?? [];
   const layerIndex = selectedObject ? objects.indexOf(selectedObject) : -1;
   const layerCount = objects.length;
+  const backgroundHex =
+    typeof canvas?.backgroundColor === "string" && /^#[0-9a-f]{6}$/i.test(canvas.backgroundColor)
+      ? canvas.backgroundColor.toLowerCase()
+      : "#ffffff";
 
   if (!selectedObject) {
     return (
-      <aside class="w-[280px] bg-white border-l border-zinc-200 flex flex-col shrink-0">
-        <div class="p-4 border-b border-zinc-200">
-          <h2 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Canvas</h2>
+      <aside class="w-[17.5rem] bg-surface border-l border-border flex flex-col shrink-0">
+        <div class="h-12 px-4 flex items-center shrink-0">
+          <h2 class="text-heading-3 text-foreground m-0">Canvas</h2>
         </div>
-        <div class="p-4 flex flex-col gap-3">
+        <div class="px-4 pb-4 flex flex-col gap-3">
           <div class="flex items-center justify-between">
-            <span class="text-[11px] text-zinc-400">Dimensions</span>
-            <span class="text-[11px] text-zinc-600 font-mono">{canvasWidth} x {canvasHeight}</span>
+            <span class="text-label text-muted">Dimensions</span>
+            <span class="text-label text-foreground tabular-nums">{canvasWidth} x {canvasHeight}</span>
           </div>
-          <label class="text-[11px] text-zinc-400">Background color</label>
-          <input
-            type="color"
-            class="w-full h-8 rounded-md border border-zinc-300 cursor-pointer bg-transparent"
-            onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
-          />
+          <span class="field-label mb-0">Background color</span>
+          <div class="flex items-center gap-2">
+            <input
+              type="color"
+              class="swatch w-8 h-8 shrink-0"
+              aria-label="Background color"
+              value={backgroundHex}
+              onChange={(e) => setBackground("color", (e.target as HTMLInputElement).value)}
+            />
+            <input
+              type="text"
+              class="field flex-1 font-mono"
+              aria-label="Background color, hex"
+              value={backgroundHex}
+              onChange={(e) => {
+                const v = (e.target as HTMLInputElement).value.trim();
+                if (/^#[0-9a-f]{6}$/i.test(v)) setBackground("color", v);
+              }}
+            />
+          </div>
           <BrandSwatches onPick={(color) => setBackground("color", color)} />
         </div>
       </aside>
@@ -169,15 +190,16 @@ export function RightSidebar() {
   }
 
   return (
-    <aside class="w-[280px] bg-white border-l border-zinc-200 flex flex-col shrink-0 overflow-y-auto">
+    <aside class="w-[17.5rem] bg-surface border-l border-border flex flex-col shrink-0 overflow-y-auto">
       {/* Header */}
-      <div class="p-4 border-b border-zinc-200 flex items-center justify-between">
-        <h2 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+      <div class="h-12 px-4 flex items-center justify-between shrink-0">
+        <h2 class="text-heading-3 text-foreground m-0">
           {isText ? "Text" : isImage ? "Image" : "Shape"}
         </h2>
         <div class="flex gap-1">
           <button
-            class="p-1 rounded text-zinc-400 bg-transparent border-none cursor-pointer hover:text-zinc-800 hover:bg-zinc-100 transition-all"
+            class="btn btn-ghost btn-icon"
+            aria-label="Duplicate"
             onClick={async () => {
               if (!canvas || !selectedObject) return;
               const clone = await selectedObject.clone();
@@ -190,7 +212,8 @@ export function RightSidebar() {
             <Copy size={14} />
           </button>
           <button
-            class="p-1 rounded text-zinc-400 bg-transparent border-none cursor-pointer hover:text-red-400 hover:bg-red-500/10 transition-all"
+            class="btn btn-ghost btn-icon is-danger"
+            aria-label="Delete"
             onClick={deleteSelected}
             title="Delete"
           >
@@ -199,7 +222,7 @@ export function RightSidebar() {
         </div>
       </div>
 
-      <div class="p-4 flex flex-col gap-4">
+      <div class="px-4 pb-4 flex flex-col gap-4">
         {/* ── Template field ────────────────────────────────────────── */}
         {(isText || isImage) && (
           <FieldNameInput
@@ -222,24 +245,23 @@ export function RightSidebar() {
         )}
 
         <div>
-          <label class="text-[11px] text-zinc-400 mb-1 block">Layer order</label>
-          <div class="flex gap-1">
+          <label class="field-label">Layer order</label>
+          <div class="grid grid-cols-2 gap-1.5">
             {([
-              ["front", BringToFront, "To front", layerIndex === layerCount - 1],
-              ["forward", MoveUp, "Forward", layerIndex === layerCount - 1],
-              ["backward", MoveDown, "Backward", layerIndex <= 0],
-              ["back", SendToBack, "To back", layerIndex <= 0],
+              ["forward", ArrowUp, "Forward", layerIndex === layerCount - 1],
+              ["backward", ArrowDown, "Backward", layerIndex <= 0],
+              ["front", ArrowUpToLine, "To front", layerIndex === layerCount - 1],
+              ["back", ArrowDownToLine, "To back", layerIndex <= 0],
             ] as const).map(([action, Icon, label, disabled]) => (
               <button
                 key={action}
                 type="button"
-                class="flex-1 flex justify-center p-1.5 rounded-md border border-zinc-300 bg-transparent text-zinc-500 cursor-pointer hover:text-zinc-900 hover:bg-zinc-100 disabled:opacity-35 disabled:cursor-not-allowed"
-                title={label}
-                aria-label={label}
+                class="btn btn-secondary w-full"
                 disabled={layerIndex < 0 || disabled}
                 onClick={() => changeLayer(action)}
               >
-                <Icon size={14} />
+                <Icon size={16} />
+                {label}
               </button>
             ))}
           </div>
@@ -257,10 +279,10 @@ export function RightSidebar() {
 
             {/* Font size */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Font size</label>
+              <label class="field-label">Font size</label>
               <input
                 type="number"
-                class="w-full bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent"
+                class="field"
                 value={(selectedObject as any).fontSize || 18}
                 onInput={(e) =>
                   updateSelectedObject({
@@ -272,14 +294,11 @@ export function RightSidebar() {
 
             {/* Bold / Italic / Underline */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Style</label>
-              <div class="flex gap-1">
+              <label class="field-label">Style</label>
+              <div class="segmented">
                 <button
-                  class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                    (selectedObject as any).fontWeight === "700" || (selectedObject as any).fontWeight === "bold"
-                      ? "bg-accent/20 border-accent text-accent"
-                      : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                  }`}
+                  class="segmented-item"
+                  aria-pressed={Boolean((selectedObject as any).fontWeight === "700" || (selectedObject as any).fontWeight === "bold")}
                   onClick={() =>
                     updateSelectedObject({
                       fontWeight:
@@ -290,13 +309,11 @@ export function RightSidebar() {
                   }
                 >
                   <Bold size={14} />
+                  <span class="sr-only">Bold</span>
                 </button>
                 <button
-                  class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                    (selectedObject as any).fontStyle === "italic"
-                      ? "bg-accent/20 border-accent text-accent"
-                      : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                  }`}
+                  class="segmented-item"
+                  aria-pressed={Boolean((selectedObject as any).fontStyle === "italic")}
                   onClick={() =>
                     updateSelectedObject({
                       fontStyle: (selectedObject as any).fontStyle === "italic" ? "normal" : "italic",
@@ -304,26 +321,25 @@ export function RightSidebar() {
                   }
                 >
                   <Italic size={14} />
+                  <span class="sr-only">Italic</span>
                 </button>
                 <button
-                  class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                    (selectedObject as any).underline
-                      ? "bg-accent/20 border-accent text-accent"
-                      : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                  }`}
+                  class="segmented-item"
+                  aria-pressed={Boolean((selectedObject as any).underline)}
                   onClick={() =>
                     updateSelectedObject({ underline: !(selectedObject as any).underline })
                   }
                 >
                   <Underline size={14} />
+                  <span class="sr-only">Underline</span>
                 </button>
               </div>
             </div>
 
             {/* Text alignment */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Alignment</label>
-              <div class="flex gap-1">
+              <label class="field-label">Alignment</label>
+              <div class="segmented">
                 {[
                   { align: "left", icon: AlignLeft },
                   { align: "center", icon: AlignCenter },
@@ -331,14 +347,12 @@ export function RightSidebar() {
                 ].map(({ align, icon: Icon }) => (
                   <button
                     key={align}
-                    class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                      (selectedObject as any).textAlign === align
-                        ? "bg-accent/20 border-accent text-accent"
-                        : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                    }`}
+                    class="segmented-item"
+                  aria-pressed={Boolean((selectedObject as any).textAlign === align)}
                     onClick={() => updateSelectedObject({ textAlign: align })}
                   >
                     <Icon size={14} />
+                    <span class="sr-only">{`Align ${align}`}</span>
                   </button>
                 ))}
               </div>
@@ -346,11 +360,11 @@ export function RightSidebar() {
 
             {/* Text color */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Color</label>
+              <label class="field-label">Color</label>
               <div class="flex items-center gap-2">
                 <input
                   type="color"
-                  class="w-8 h-8 rounded border border-zinc-300 cursor-pointer bg-transparent shrink-0"
+                  class="swatch w-8 h-8 shrink-0"
                   value={((selectedObject as any).fill as string) || "#ffffff"}
                   onInput={(e) =>
                     updateSelectedObject({ fill: (e.target as HTMLInputElement).value })
@@ -358,7 +372,7 @@ export function RightSidebar() {
                 />
                 <input
                   type="text"
-                  class="flex-1 bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent font-mono"
+                  class="field flex-1 font-mono"
                   value={((selectedObject as any).fill as string) || "#ffffff"}
                   onInput={(e) =>
                     updateSelectedObject({ fill: (e.target as HTMLInputElement).value })
@@ -370,16 +384,16 @@ export function RightSidebar() {
 
             {/* Line height */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 flex justify-between">
+              <label class="field-label flex justify-between">
                 Line height
-                <span class="text-zinc-400 font-mono">{((selectedObject as any).lineHeight || 1.2).toFixed(1)}</span>
+                <span class="font-normal text-muted tabular-nums">{((selectedObject as any).lineHeight || 1.2).toFixed(1)}</span>
               </label>
               <input
                 type="range"
                 min="0.8"
                 max="3"
                 step="0.1"
-                class="w-full accent-accent"
+                class="w-full"
                 value={(selectedObject as any).lineHeight || 1.2}
                 onInput={(e) =>
                   updateSelectedObject({
@@ -391,16 +405,16 @@ export function RightSidebar() {
 
             {/* Letter spacing */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 flex justify-between">
+              <label class="field-label flex justify-between">
                 Letter spacing
-                <span class="text-zinc-400 font-mono">{(selectedObject as any).charSpacing || 0}</span>
+                <span class="font-normal text-muted tabular-nums">{(selectedObject as any).charSpacing || 0}</span>
               </label>
               <input
                 type="range"
                 min="-200"
                 max="800"
                 step="10"
-                class="w-full accent-accent"
+                class="w-full"
                 value={(selectedObject as any).charSpacing || 0}
                 onInput={(e) =>
                   updateSelectedObject({
@@ -417,20 +431,20 @@ export function RightSidebar() {
           <>
             {/* Fill color */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Fill color</label>
+              <label class="field-label">Fill color</label>
               <div class="flex items-center gap-2">
                 <input
                   type="color"
-                  class="w-8 h-8 rounded border border-zinc-300 cursor-pointer bg-transparent shrink-0"
-                  value={(selectedObject.fill as string) || "#6366f1"}
+                  class="swatch w-8 h-8 shrink-0"
+                  value={(selectedObject.fill as string) || "#9a9893"}
                   onInput={(e) =>
                     updateSelectedObject({ fill: (e.target as HTMLInputElement).value })
                   }
                 />
                 <input
                   type="text"
-                  class="flex-1 bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent font-mono"
-                  value={(selectedObject.fill as string) || "#6366f1"}
+                  class="field flex-1 font-mono"
+                  value={(selectedObject.fill as string) || "#9a9893"}
                   onInput={(e) =>
                     updateSelectedObject({ fill: (e.target as HTMLInputElement).value })
                   }
@@ -441,11 +455,11 @@ export function RightSidebar() {
 
             {/* Stroke */}
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Stroke color</label>
+              <label class="field-label">Stroke color</label>
               <div class="flex items-center gap-2">
                 <input
                   type="color"
-                  class="w-8 h-8 rounded border border-zinc-300 cursor-pointer bg-transparent shrink-0"
+                  class="swatch w-8 h-8 shrink-0"
                   value={(selectedObject.stroke as string) || "#000000"}
                   onInput={(e) =>
                     updateSelectedObject({ stroke: (e.target as HTMLInputElement).value })
@@ -453,7 +467,7 @@ export function RightSidebar() {
                 />
                 <input
                   type="number"
-                  class="w-16 bg-white border border-zinc-300 rounded-md text-xs text-zinc-700 px-2 py-1.5 outline-none focus:border-accent"
+                  class="field w-20 tabular-nums"
                   value={selectedObject.strokeWidth || 0}
                   min={0}
                   placeholder="Width"
@@ -469,15 +483,15 @@ export function RightSidebar() {
             {/* Border radius (for rect) */}
             {selectedObject instanceof fabric.Rect && (
               <div>
-                <label class="text-[11px] text-zinc-400 mb-1 flex justify-between">
+                <label class="field-label flex justify-between">
                   Border radius
-                  <span class="text-zinc-400 font-mono">{(selectedObject as any).rx || 0}px</span>
+                  <span class="font-normal text-muted tabular-nums">{(selectedObject as any).rx || 0}px</span>
                 </label>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  class="w-full accent-accent"
+                  class="w-full"
                   value={(selectedObject as any).rx || 0}
                   onInput={(e) => {
                     const val = parseInt((e.target as HTMLInputElement).value);
@@ -493,27 +507,23 @@ export function RightSidebar() {
         {isImage && (
           <>
             <div>
-              <label class="text-[11px] text-zinc-400 mb-1 block">Flip</label>
-              <div class="flex gap-1">
+              <label class="field-label">Flip</label>
+              <div class="segmented">
                 <button
-                  class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                    selectedObject.flipX
-                      ? "bg-accent/20 border-accent text-accent"
-                      : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                  }`}
+                  class="segmented-item"
+                  aria-pressed={Boolean(selectedObject.flipX)}
                   onClick={() => updateSelectedObject({ flipX: !selectedObject.flipX })}
                 >
                   <FlipHorizontal size={14} />
+                  <span class="sr-only">Flip horizontally</span>
                 </button>
                 <button
-                  class={`p-1.5 rounded-md border cursor-pointer transition-all ${
-                    selectedObject.flipY
-                      ? "bg-accent/20 border-accent text-accent"
-                      : "bg-transparent border-zinc-300 text-zinc-400 hover:text-zinc-900"
-                  }`}
+                  class="segmented-item"
+                  aria-pressed={Boolean(selectedObject.flipY)}
                   onClick={() => updateSelectedObject({ flipY: !selectedObject.flipY })}
                 >
                   <FlipVertical size={14} />
+                  <span class="sr-only">Flip vertically</span>
                 </button>
               </div>
             </div>
@@ -522,16 +532,16 @@ export function RightSidebar() {
 
         {/* ── Common: Opacity ───────────────────────────────────────── */}
         <div>
-          <label class="text-[11px] text-zinc-400 mb-1 flex justify-between">
+          <label class="field-label flex justify-between">
             Opacity
-            <span class="text-zinc-400 font-mono">{Math.round((selectedObject.opacity ?? 1) * 100)}%</span>
+            <span class="font-normal text-muted tabular-nums">{Math.round((selectedObject.opacity ?? 1) * 100)}%</span>
           </label>
           <input
             type="range"
             min="0"
             max="1"
             step="0.01"
-            class="w-full accent-accent"
+            class="w-full"
             value={selectedObject.opacity ?? 1}
             onInput={(e) =>
               updateSelectedObject({

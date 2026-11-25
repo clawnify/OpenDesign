@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit3, Sparkles } from "lucide-preact";
 import type { Design, Template } from "../types";
 import { api } from "../api";
 import { TemplateCard } from "./template-card";
+import { CanvasPreview } from "./canvas-preview";
 
 interface HomeProps {
   designs: Design[];
@@ -51,35 +52,35 @@ export function Home({
   };
 
   return (
-    <div class="h-full overflow-y-auto bg-[#F3F4F7]">
+    <div class="h-full overflow-y-auto bg-background">
       {/* Header */}
-      <div class="bg-white border-b border-zinc-200">
-        <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <h1 class="text-lg font-bold text-zinc-800 m-0">My Designs</h1>
-            <p class="text-xs text-zinc-400 mt-0.5 m-0">
+      <div class="bg-surface border-b border-border">
+        <div class="max-w-[80rem] mx-auto h-14 px-6 flex items-center justify-between">
+          <div class="flex items-baseline gap-2">
+            <h1 class="text-heading-1 text-foreground m-0">Designs</h1>
+            <p class="text-body-sm text-muted tabular-nums m-0">
               {designs.length} design{designs.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
-            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border-none cursor-pointer bg-[#6366f1] text-white hover:bg-[#5558e6] transition-all shadow-sm"
+            class="btn btn-primary"
             onClick={handleCreate}
           >
-            <Plus size={15} />
-            New Design
+            <Plus size={16} />
+            New design
           </button>
         </div>
       </div>
 
-      <div class="max-w-6xl mx-auto px-6 py-6">
+      <div class="max-w-[80rem] mx-auto px-6 py-6">
         {/* Templates section */}
         {templates.length > 0 && (
           <div class="mb-8">
             <div class="flex items-center gap-2 mb-3">
-              <Sparkles size={14} class="text-[#6366f1]" />
-              <h2 class="text-sm font-semibold text-zinc-700 m-0">Start from a template</h2>
+              <Sparkles size={16} class="text-muted" />
+              <h2 class="text-heading-2 text-foreground m-0">Start from a template</h2>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {templates.map((t) => (
                 <TemplateCard key={t.id} template={t} onClick={() => handleTemplateClick(t)} />
               ))}
@@ -90,49 +91,68 @@ export function Home({
         {/* Designs grid */}
         {designs.length === 0 ? (
           <div class="text-center py-20">
-            <div class="w-16 h-16 rounded-2xl bg-zinc-200 flex items-center justify-center mx-auto mb-4">
-              <Plus size={24} class="text-zinc-400" />
+            <div class="w-14 h-14 rounded-md bg-surface-sunken flex items-center justify-center mx-auto mb-4">
+              <Plus size={24} class="text-muted" />
             </div>
-            <p class="text-sm text-zinc-500 mb-1">No designs yet</p>
-            <p class="text-xs text-zinc-400 mb-4">Create your first design to get started</p>
+            <p class="text-heading-3 text-foreground mb-1">No designs yet</p>
+            <p class="text-body-sm text-muted mb-4">Start from a template above, or from a blank page.</p>
             <button
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border-none cursor-pointer bg-[#6366f1] text-white hover:bg-[#5558e6] transition-all"
+              class="btn btn-secondary"
               onClick={handleCreate}
             >
-              <Plus size={14} />
-              Create Design
+              <Plus size={16} />
+              Blank design
             </button>
           </div>
         ) : (
           <>
-            <h2 class="text-sm font-semibold text-zinc-700 mb-3 m-0">Recent designs</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <h2 class="text-heading-2 text-foreground mb-3 m-0">Recent designs</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {designs.map((d) => (
                 <div
                   key={d.id}
-                  class="bg-white rounded-xl border border-zinc-200 overflow-hidden cursor-pointer transition-all hover:border-[#6366f1] hover:shadow-md group"
+                  class="card is-interactive flex flex-col cursor-pointer group"
                   onClick={() => navigate(`/design/${d.id}`)}
                 >
                   {/* Preview area */}
-                  <div class="aspect-[4/3] bg-zinc-100 flex items-center justify-center">
-                    {d.thumbnail_url ? (
-                      <img
-                        src={d.thumbnail_url}
-                        alt={d.name}
-                        class="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div class="text-zinc-300 text-[10px] font-medium">
-                        {d.width} x {d.height}
-                      </div>
-                    )}
+                  {d.thumbnail_url ? (
+                    <div class="aspect-square bg-surface-sunken flex items-center justify-center">
+                      <img src={d.thumbnail_url} alt={d.name} class="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : (
+                    <CanvasPreview json={d.canvas_json} width={d.width} height={d.height} alt={d.name} />
+                  )}
+
+                  {/* The card's actions sit on the preview's corner, so the
+                      caption below keeps its whole width for the name. */}
+                  <div
+                    class="absolute top-2 right-2 z-10 flex gap-0.5 p-0.5 rounded-sm bg-surface shadow-raised opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                    data-hover-only
+                  >
+                    <button
+                      class="btn btn-ghost btn-icon"
+                      aria-label="Rename"
+                      onClick={(e) => startRename(d.id, d.name, e)}
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-icon is-danger"
+                      aria-label="Delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteDesign(d.id);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
 
                   {/* Info */}
-                  <div class="p-3">
+                  <div class="flex-1 px-2.5 py-2 border-t border-border">
                     {editingId === d.id ? (
                       <input
-                        class="w-full bg-zinc-100 border border-[#6366f1] rounded text-zinc-800 text-xs px-2 py-1 outline-none"
+                        class="field h-7"
                         value={editName}
                         onInput={(e) => setEditName((e.target as HTMLInputElement).value)}
                         onBlur={finishRename}
@@ -144,34 +164,12 @@ export function Home({
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <div class="flex items-start justify-between">
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs font-semibold text-zinc-700 truncate m-0">
-                            {d.name}
-                          </p>
-                          <p class="text-[10px] text-zinc-400 mt-0.5 m-0">
-                            {d.width} x {d.height} &middot;{" "}
-                            {new Date(d.updated_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                          <button
-                            class="p-1 rounded text-zinc-400 bg-transparent border-none cursor-pointer hover:text-zinc-700 transition-colors"
-                            onClick={(e) => startRename(d.id, d.name, e)}
-                          >
-                            <Edit3 size={12} />
-                          </button>
-                          <button
-                            class="p-1 rounded text-zinc-400 bg-transparent border-none cursor-pointer hover:text-red-400 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteDesign(d.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
+                      <>
+                        <p class="text-label text-foreground line-clamp-2 hyphens-auto break-words m-0">{d.name}</p>
+                        <p class="text-fine text-muted tabular-nums mt-0.5 m-0">
+                          {d.width}&times;{d.height} &middot; {new Date(d.updated_at).toLocaleDateString()}
+                        </p>
+                      </>
                     )}
                   </div>
                 </div>

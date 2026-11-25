@@ -46,7 +46,7 @@ text takes the style of the old text's first character. A variable with no
 value in the fill is left as written, so it shows instead of vanishing.
 
 ### Fitting a value on its lines
-A text with `maxLines` set (the editor's "Fit on lines") is drawn at the
+A text with `maxLines` set (the editor's "Shrink to fit") is drawn at the
 largest size, up to the size it was designed at, that keeps it on that many
 lines. Set it on every field whose value can run long. It shrinks from the
 object's origin: from the top edge by default, around the middle when
