@@ -4,13 +4,15 @@
 
 [![Deploy with Clawnify](https://app.clawnify.com/deploy-button.svg)](https://app.clawnify.com/deploy?repo=clawnify/OpenDesign)
 
-A design editor for creating professional social media graphics — LinkedIn posts, quote cards, announcements, and more. Part of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem. Zero cloud dependencies — runs locally with SQLite.
+A design editor for creating professional social media graphics — LinkedIn posts, quote cards, announcements, and more. Zero cloud dependencies — runs locally with SQLite.
+
+The app is open source. Deploy it to Clawnify to use it from ChatGPT, Claude, or other MCP-compatible AI chats through the Clawnify connector.
 
 Built with **Preact + Fabric.js + Tailwind CSS + Hono + SQLite**. Ships with a Figma-inspired dark editor UI, retina canvas rendering, and pre-built LinkedIn post templates.
 
 ## What Is It?
 
-OpenDesign is a production-ready graphic design editor designed for the OpenClaw community. Think of it as an open-source Canva alternative — a visual design tool you can self-host, customize, and embed in any SaaS product.
+OpenDesign is a production-ready graphic design editor. Think of it as an open-source Canva alternative — a visual design tool you can self-host, customize, and embed in any SaaS product.
 
 Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No subscriptions, no watermarks, no vendor lock-in. Create pixel-perfect social media graphics with professional typography and export at 2x resolution.
 
@@ -64,7 +66,7 @@ pnpm run dev
 
 Open `http://localhost:5173` in your browser. Designs and uploads persist in the local D1 and R2 simulators under `.wrangler/`.
 
-### Agent Mode (for OpenClaw / Claude Code)
+### Agent Mode (for coding assistants)
 
 Append `?agent=true` to the URL:
 
@@ -97,7 +99,7 @@ curl -X PUT http://localhost:3006/api/designs/1 \
   -d '{"canvas_json": "{...}"}'
 ```
 
-OpenClaw agents can also use the browser tool to visually interact with the editor — navigate, click templates, edit text, and export PNGs.
+AI assistants with browser access can also use it to visually interact with the editor — navigate, click templates, edit text, and export PNGs.
 
 ## Tech Stack
 
@@ -260,7 +262,7 @@ Worth knowing:
 
 ## Community & Contributions
 
-This project is part of the [OpenClaw](https://github.com/openclaw/openclaw) ecosystem. Contributions are welcome — open an issue or submit a PR.
+Contributions are welcome — open an issue or submit a PR.
 
 ## License
 
