@@ -13,6 +13,7 @@ import {
   SwatchBook,
 } from "lucide-preact";
 import { useEditor } from "../context";
+import { UploadGallery } from "./upload-gallery";
 import { TemplateCard } from "./template-card";
 import { DesignList } from "./design-list";
 import { BrandKitPanel } from "./brand-kit-panel";
@@ -59,6 +60,8 @@ export function LeftSidebar() {
   const { addText, addShape, addImage, setBackground, templates, loadTemplate } = useEditor();
   const [activeSection, setActiveSection] = useState<Section | null>("templates");
   const [uploading, setUploading] = useState(false);
+  const [galleryRevision, setGalleryRevision] = useState(0);
+  const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bgFileRef = useRef<HTMLInputElement>(null);
 
@@ -70,19 +73,25 @@ export function LeftSidebar() {
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
       setUploading(true);
-      try {
-        for (const file of Array.from(files)) {
+      setUploadError("");
+      let uploaded = false;
+      const errors: string[] = [];
+      for (const file of Array.from(files)) {
+        try {
           const form = new FormData();
           form.append("file", file);
           const resp = await fetch("/api/uploads", { method: "POST", body: form });
           const data = await resp.json();
-          if (data.url) addImage(data.url);
+          if (!resp.ok || !data.url) throw new Error(data.error || "Upload failed");
+          uploaded = true;
+          addImage(data.url);
+        } catch (e) {
+          errors.push(`${file.name}: ${e instanceof Error ? e.message : "Upload failed"}`);
         }
-      } catch (e) {
-        console.error("Upload failed:", e);
-      } finally {
-        setUploading(false);
       }
+      if (uploaded) setGalleryRevision((revision) => revision + 1);
+      setUploadError(errors.join("\n"));
+      setUploading(false);
     },
     [addImage]
   );
@@ -106,9 +115,9 @@ export function LeftSidebar() {
   const handleDrop = useCallback(
     (e: DragEvent) => {
       e.preventDefault();
-      handleImageUpload(e.dataTransfer?.files ?? null);
+      if (!uploading) void handleImageUpload(e.dataTransfer?.files ?? null);
     },
-    [handleImageUpload]
+    [handleImageUpload, uploading]
   );
 
   const isOpen = activeSection !== null;
@@ -139,7 +148,7 @@ export function LeftSidebar() {
         class="bg-surface border-r border-border overflow-hidden transition-[width] duration-200 ease-in-out"
         style={{ width: isOpen ? "17.5rem" : "0" }}
       >
-        <div class="w-[17.5rem] h-full flex flex-col">
+        <div class="editor-tools-content w-[17.5rem] h-full flex flex-col">
           {activeSection && (
             <>
               <div class="h-12 px-3 flex items-center shrink-0">
@@ -231,9 +240,10 @@ export function LeftSidebar() {
 
                 {activeSection === "images" && (
                   <div>
-                    <p class="text-body-sm text-muted mb-2">Upload images to add to canvas</p>
-                    <div
-                      class="dropzone p-6 text-center"
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      class="dropzone w-full p-6 text-center"
                       onClick={() => fileInputRef.current?.click()}
                       onDrop={handleDrop}
                       onDragOver={(e) => e.preventDefault()}
@@ -242,16 +252,21 @@ export function LeftSidebar() {
                       <p class="text-body-sm">
                         {uploading ? "Uploading…" : "Click or drag images here"}
                       </p>
-                      <p class="text-fine text-muted mt-1">PNG, JPG, SVG, WebP</p>
-                    </div>
+                      <p class="text-fine text-muted mt-1">PNG, JPG, GIF, SVG, WebP</p>
+                    </button>
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       multiple
                       class="hidden"
-                      onChange={(e) => handleImageUpload((e.target as HTMLInputElement).files)}
+                      onChange={(e) => {
+                        void handleImageUpload(e.currentTarget.files);
+                        e.currentTarget.value = "";
+                      }}
                     />
+                    {uploadError && <p role="alert" class="text-body-sm whitespace-pre-line">{uploadError}</p>}
+                    <UploadGallery key={galleryRevision} onAdd={addImage} />
                   </div>
                 )}
 

@@ -34,7 +34,7 @@ export interface EditorContextValue {
   importFont: (file: File) => Promise<string>;
 
   // Canvas (multi-canvas)
-  registerCanvas: (pageId: string, canvas: fabric.Canvas) => void;
+  registerCanvas: (pageId: string, canvas: fabric.Canvas) => () => void;
   unregisterCanvas: (pageId: string) => void;
   setActiveCanvas: (pageId: string) => void;
   activeCanvasId: string | null;
