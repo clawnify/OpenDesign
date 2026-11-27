@@ -2,6 +2,7 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type { Design, Template, Page, BrandKit, CustomFont } from "./types";
 import type * as fabric from "fabric";
+import type { DesignCanvas } from "./lib/design-canvas";
 import type { Dimensions } from "./resize";
 
 export interface CanvasSize {
@@ -34,7 +35,7 @@ export interface EditorContextValue {
   importFont: (file: File) => Promise<string>;
 
   // Canvas (multi-canvas)
-  registerCanvas: (pageId: string, canvas: fabric.Canvas) => () => void;
+  registerCanvas: (pageId: string, canvas: DesignCanvas) => () => void;
   unregisterCanvas: (pageId: string) => void;
   setActiveCanvas: (pageId: string) => void;
   activeCanvasId: string | null;

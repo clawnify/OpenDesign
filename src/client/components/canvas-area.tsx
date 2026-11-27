@@ -207,16 +207,14 @@ export function CanvasArea() {
               class={`relative mx-auto mt-1 overflow-clip ring-1 ring-border ${page.id === activePageId ? "outline-2 outline-offset-4 outline-selection" : ""}`}
               style={{ width: pageWidth, height: pageHeight }}
             >
-              <div class="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${zoom})` }}>
-                <PageCanvas
-                  revision={pageView(page.id)?.key ?? 0}
-                  page={page}
-                  width={canvasWidth}
-                  height={canvasHeight}
-                  scrollAreaRef={wrapperRef}
-                  onActivate={() => setActiveCanvas(page.id)}
-                />
-              </div>
+              <PageCanvas
+                revision={pageView(page.id)?.key ?? 0}
+                page={page}
+                width={canvasWidth}
+                height={canvasHeight}
+                scrollAreaRef={wrapperRef}
+                onActivate={() => setActiveCanvas(page.id)}
+              />
             </div>
 
           </div>

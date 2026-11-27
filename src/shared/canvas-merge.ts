@@ -69,7 +69,15 @@ export function mergeCanvas(baseJson: string, mineJson: string, theirsJson: stri
       else { order.splice(at++, 0, id); placed.add(id); }
     }
   }
-  const touched = [...m].filter(([id, layer]) => layers.has(id) && !same(b.get(id), layer));
-  const canvas = {...properties(base, mine, theirs, "Page settings", "objects"), objects: order.map(id => layers.get(id))};
-  return {json: JSON.stringify(canvas), editedLayer: touched.length === 1 ? touched[0][0] : null, conflicts: [...conflicts]};
+  const settings = properties(base, mine, theirs, "Page settings", "objects");
+  const {objects: currentLayers, ...currentSettings} = theirs;
+  // Compare against the artwork being replaced, so another editor's changes
+  // and already-applied retries don't move the agent's marker.
+  const touched = order.filter(id => !same(t.get(id), layers.get(id)));
+  const removedOrReordered = !same(currentLayers.map(o => o.layerId), order.filter(id => t.has(id)));
+  let target: "page" | {layerId: string} | null = null;
+  if (removedOrReordered || !same(settings, currentSettings) || touched.length > 1) target = "page";
+  else if (touched.length === 1) target = {layerId: touched[0]};
+  const canvas = {...settings, objects: order.map(id => layers.get(id))};
+  return {json: JSON.stringify(canvas), target, conflicts: [...conflicts]};
 }

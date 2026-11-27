@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import { readCanvas, same } from "../../shared/canvas-merge";
+import { remoteGeometry, type DesignCanvas, type Geometry } from "../lib/design-canvas";
 import { listenToCanvasClipboard } from "../lib/canvas-clipboard";
 import { fitAll, fitText } from "../lib/fit-text";
 import * as fabric from "fabric";
@@ -48,7 +49,7 @@ function historyStep(histories: Map<string, CanvasHistory>, id: string, directio
 export function useCanvasState(onChange: () => void = () => {}) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const canvasMapRef = useRef<Map<string, fabric.Canvas>>(new Map());
+  const canvasMapRef = useRef<Map<string, DesignCanvas>>(new Map());
   const historyMapRef = useRef<Map<string, CanvasHistory>>(new Map());
   const [activeCanvasId, setActiveCanvasId] = useState<string | null>(null);
   const activeCanvasIdRef = useRef<string | null>(null);
@@ -146,7 +147,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
-  const registerCanvas = useCallback((pageId: string, canvas: fabric.Canvas) => {
+  const registerCanvas = useCallback((pageId: string, canvas: DesignCanvas) => {
     canvasMapRef.current.set(pageId, canvas);
     if (pageId === activeCanvasIdRef.current) setSelectionVersion(v => v + 1);
 
@@ -524,7 +525,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
     (pageIds: string[]) =>
       pageIds
         .map((id) => canvasMapRef.current.get(id))
-        .filter((c): c is fabric.Canvas => Boolean(c)),
+        .filter((c): c is DesignCanvas => Boolean(c)),
     []
   );
 
@@ -593,22 +594,16 @@ export function useCanvasState(onChange: () => void = () => {}) {
     const {objects: next, ...nextPage} = readCanvas(after);
     if (!same(oldPage, nextPage) || old.length !== next.length) return false;
     const objects = new Map(canvas.getObjects().map(obj => [obj.get("layerId"), obj]));
-    const moves: {object: fabric.FabricObject; left: number; top: number}[] = [];
+    const moves: {object: fabric.FabricObject; geometry: Geometry}[] = [];
     for (let i = 0; i < next.length; i++) {
-      const {left, top, ...rest} = next[i];
-      const {left: oldLeft, top: oldTop, ...oldRest} = old[i];
-      if (!same(rest, oldRest)) return false;
-      if (left === oldLeft && top === oldTop) continue;
-      const object = objects.get(rest.layerId);
+      if (same(old[i], next[i])) continue;
+      const object = objects.get(next[i].layerId);
       if (!object || object.group) return false;
-      const x = left ?? 0, y = top ?? 0;
-      if (typeof x !== "number" || typeof y !== "number") return false;
-      moves.push({object, left: x, top: y});
+      const geometry = remoteGeometry(old[i], next[i], object);
+      if (!geometry) return false;
+      moves.push({object, geometry});
     }
-    for (const {object, left, top} of moves) {
-      object.set({left, top});
-      object.setCoords();
-    }
+    for (const {object, geometry} of moves) canvas.moveLayer(object, geometry);
     if (moves.length) {
       canvas.requestRenderAll();
       // Undo snapshots predating a remote move would undo another editor's work.

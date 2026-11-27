@@ -116,6 +116,9 @@
   --color-on-accent: var(--on-accent);
   --color-nav-active: var(--nav-active);
   --color-selection: var(--selection);
+  /* Only the hue varies between collaborators. Keep their labels legible on any canvas. */
+  --color-collaborator: oklch(52% 0.15 var(--collaborator-hue));
+  --color-on-collaborator: white;
   --color-info: var(--info);
   --color-info-tint: var(--info-tint);
   --color-info-solid: var(--info-solid);

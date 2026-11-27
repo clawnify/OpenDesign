@@ -16,13 +16,14 @@ export function Editor() {
     const [pageId, layerId] = selection.split(":");
     const page = pages.find(p => p.id === pageId);
     if (!page) return "";
+    if (!layerId) return page.title;
     const object = readCanvas(page.canvas_json).objects.find(o => o.layerId === layerId);
     return object ? String(object.fieldName || object.text || object.type || "layer").slice(0, 48) : "layer";
   }
   return (
     <div class="flex flex-col h-full w-full">
       <Toolbar />
-      {editors.length > 0 && <div class="flex gap-3 px-3 py-1 text-label" aria-live="polite">{editors.map(editor =>
+      {editors.length > 0 && <div class="sr-only" aria-live="polite">{editors.map(editor =>
         <span key={editor.id}>{editor.name}{editor.selection ? " · " + layerLabel(editor.selection) : " · In this design"}</span>)}</div>}
       {conflict && <div class="flex items-center gap-2 px-3 py-2 text-label" role="alert">
         {conflict.removed ? <span>{conflict.page.title} was deleted while you had edits.</span> : <span>Overlapping edits on {conflict.page.title}: {conflict.layers.map(id => layerLabel(conflict.page.id + ":" + id) || id).join(", ") || "page changed"}.</span>}
