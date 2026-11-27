@@ -1,4 +1,6 @@
 import { useRef, useEffect } from "preact/hooks";
+import type { RefObject } from "preact";
+import { watchDragScroll } from "../lib/drag-scroll";
 import { fitAll } from "../lib/fit-text";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
@@ -6,13 +8,13 @@ import type { Page } from "../types";
 
 interface PageCanvasProps {
   page: Page;
-  isActive: boolean;
   width: number;
   height: number;
+  scrollAreaRef: RefObject<HTMLDivElement>;
   onActivate: () => void;
 }
 
-export function PageCanvas({ page, isActive, width, height, onActivate }: PageCanvasProps) {
+export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: PageCanvasProps) {
   const { registerCanvas, unregisterCanvas } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
@@ -153,8 +155,10 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
 
     fabricRef.current = c;
     registerCanvas(page.id, c);
+    const stopWatchingDrag = scrollAreaRef.current && watchDragScroll(c, scrollAreaRef.current);
 
     return () => {
+      stopWatchingDrag?.();
       unregisterCanvas(page.id);
       c.dispose();
       fabricRef.current = null;
@@ -176,12 +180,5 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
     c.requestRenderAll();
   }, [width, height]);
 
-  return (
-    <div
-      class={`ring-1 ring-border ${isActive ? "outline-2 outline-offset-4 outline-selection" : ""}`}
-      style={{ width, height }}
-    >
-      <canvas ref={canvasElRef} />
-    </div>
-  );
+  return <canvas ref={canvasElRef} />;
 }

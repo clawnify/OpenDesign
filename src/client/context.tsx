@@ -97,7 +97,7 @@ export interface EditorContextValue {
   pages: Page[];
   activePageId: string | null;
   activePage: Page | null;
-  addPage: () => Promise<void>;
+  addPage: (afterPageId?: string) => Promise<void>;
   duplicatePage: (pageId: string) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, title: string) => Promise<void>;
