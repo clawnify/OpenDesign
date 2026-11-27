@@ -28,7 +28,7 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 - **Custom fonts** — click **Import font from computer…** in a text or brand-kit font selector to upload TTF, OTF, WOFF or WOFF2 files (up to 10 MB). Fonts are saved with the app, load before the canvas renders, and travel with exported brand kits.
 - **Text editing** — font family, size, weight, alignment, color, line height, letter spacing
 - **Shapes** — rectangles, circles, triangles, lines with fill, stroke, border radius
-- **Image uploads** — drag-and-drop or click to upload, place on canvas
+- **Image uploads** — drag or choose images to place them on the canvas. Reuse saved images from Uploads in any design.
 - **Brand kits** — save a palette, a heading/body font pair and your logos, then apply them to any design in one click. Brand swatches appear wherever you pick a color. Kits export and import as plain JSON, so a kit moves between installs or over to a client instead of being stranded in one account
 - **Backgrounds** — solid colors, gradients, uploaded images
 - **Canvas sizes** — LinkedIn Square (1080x1080), LinkedIn Carousel (1080x1350), LinkedIn Landscape (1200x627), LinkedIn Portrait (1200x1500), Instagram Story (1080x1920)
@@ -169,6 +169,7 @@ templates (id, name, category, canvas_json, width, height, thumbnail_url, sort_o
 | POST | `/api/designs/:id/fill` | Fill those fields with values |
 | GET | `/api/templates` | List all templates |
 | GET | `/api/templates/:id` | Get a template |
+| GET | `/api/uploads` | List saved images. Pass the returned cursor to load the next page. |
 | POST | `/api/uploads` | Upload an image file |
 | GET | `/api/uploads/:filename` | Serve an uploaded image or font |
 | GET | `/api/fonts` | List imported fonts |
