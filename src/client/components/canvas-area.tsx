@@ -15,6 +15,7 @@ export function CanvasArea() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
   const dragRef = useRef<{ id: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -117,11 +118,13 @@ export function CanvasArea() {
     <div
       ref={wrapperRef}
       class="min-h-0 flex-1 overflow-auto bg-canvas"
+      style={{ cursor: isPanning ? "grabbing" : "grab" }}
       onPointerDown={(event) => {
         if (event.button !== 0 || (event.target as Element).closest("[data-page-id], button, input")) return;
         canvas?.discardActiveObject();
         canvas?.requestRenderAll();
         dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
+        setIsPanning(true);
         event.currentTarget.setPointerCapture(event.pointerId);
       }}
       onPointerMove={(event) => {
@@ -130,16 +133,20 @@ export function CanvasArea() {
         setPan({ x: drag.panX + event.clientX - drag.x, y: drag.panY + event.clientY - drag.y });
       }}
       onPointerUp={(event) => {
-        if (dragRef.current?.id === event.pointerId) dragRef.current = null;
+        if (dragRef.current?.id === event.pointerId) {
+          dragRef.current = null;
+          setIsPanning(false);
+        }
       }}
-      onPointerCancel={() => { dragRef.current = null; }}
+      onPointerCancel={() => { dragRef.current = null; setIsPanning(false); }}
+      onLostPointerCapture={() => { dragRef.current = null; setIsPanning(false); }}
     >
       <div
         class="flex flex-col items-center gap-4 pb-4"
         style={{ width: `max(100%, ${pageWidth + 2 * SIDE_GUTTER}px)`, paddingTop: topPadding, transform: `translate(${pan.x}px, ${pan.y}px)` }}
       >
         {pages.map((page) => (
-          <div key={page.id} data-page-id={page.id} style={{ width: Math.max(pageWidth, 128), maxWidth: "100%" }}>
+          <div key={page.id} data-page-id={page.id} style={{ width: Math.max(pageWidth, 128), maxWidth: "100%", cursor: "default" }}>
             <div class="flex h-8 items-center justify-between gap-1">
               {/* Title — click to rename */}
               <div class="flex min-w-0 items-center gap-1.5">
