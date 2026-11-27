@@ -1,7 +1,7 @@
 type Layer = Record<string, unknown> & { layerId: string };
 type Canvas = Record<string, unknown> & { objects: Layer[] };
 
-function same(a: unknown, b: unknown): boolean {
+export function same(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
   const x = a as Record<string, unknown>, y = b as Record<string, unknown>;
@@ -67,6 +67,7 @@ export function mergeCanvas(baseJson: string, mineJson: string, theirsJson: stri
       else { order.splice(at++, 0, id); placed.add(id); }
     }
   }
+  const touched = [...m].filter(([id, layer]) => layers.has(id) && !same(b.get(id), layer));
   const canvas = {...properties(base, mine, theirs, "Page settings", "objects"), objects: order.map(id => layers.get(id))};
-  return {json: JSON.stringify(canvas), conflicts: [...conflicts]};
+  return {json: JSON.stringify(canvas), editedLayer: touched.length === 1 ? touched[0][0] : null, conflicts: [...conflicts]};
 }

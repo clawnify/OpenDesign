@@ -209,7 +209,7 @@ export function CanvasArea() {
             >
               <div class="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${zoom})` }}>
                 <PageCanvas
-                  key={pageView(page.id)?.key ?? 0}
+                  revision={pageView(page.id)?.key ?? 0}
                   page={page}
                   width={canvasWidth}
                   height={canvasHeight}

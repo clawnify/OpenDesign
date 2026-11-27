@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
+import { readCanvas, same } from "../../shared/canvas-merge";
 import { fitAll, fitText } from "../lib/fit-text";
 import * as fabric from "fabric";
 import type { Template, BrandKit } from "../types";
@@ -565,6 +566,44 @@ export function useCanvasState(onChange: () => void = () => {}) {
     return JSON.stringify(canvas.toJSON());
   }, []);
 
+  // Keep Fabric's live objects, pointer gesture and focused textarea for moves.
+  // Structural edits use the full Fabric loader, which knows how to revive assets.
+  const applyRemoteMove = useCallback((pageId: string, before: string, after: string) => {
+    const canvas = canvasMapRef.current.get(pageId);
+    if (!canvas) return false;
+    const {objects: old, ...oldPage} = readCanvas(before);
+    const {objects: next, ...nextPage} = readCanvas(after);
+    if (!same(oldPage, nextPage) || old.length !== next.length) return false;
+    const objects = new Map(canvas.getObjects().map(obj => [obj.get("layerId"), obj]));
+    const moves: {object: fabric.FabricObject; left: number; top: number}[] = [];
+    for (let i = 0; i < next.length; i++) {
+      const {left, top, ...rest} = next[i];
+      const {left: oldLeft, top: oldTop, ...oldRest} = old[i];
+      if (!same(rest, oldRest)) return false;
+      if (left === oldLeft && top === oldTop) continue;
+      const object = objects.get(rest.layerId);
+      if (!object || object.group) return false;
+      const x = left ?? 0, y = top ?? 0;
+      if (typeof x !== "number" || typeof y !== "number") return false;
+      moves.push({object, left: x, top: y});
+    }
+    for (const {object, left, top} of moves) {
+      object.set({left, top});
+      object.setCoords();
+    }
+    if (moves.length) {
+      canvas.requestRenderAll();
+      // Undo snapshots predating a remote move would undo another editor's work.
+      historyMapRef.current.set(pageId, {entries: [JSON.stringify(canvas.toJSON())], index: 0});
+      if (resizeSnapshotRef.current?.pages.has(pageId)) {
+        resizeSnapshotRef.current = null;
+        setCanUndoResize(false);
+      }
+      updateUndoRedoState(pageId);
+    }
+    return true;
+  }, [updateUndoRedoState]);
+
   const loadTemplate = useCallback(
     (template: Template) => {
       // The template brings its own frame and artwork, so nothing is reflowed.
@@ -704,6 +743,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
     exporting,
     getCanvasJSON,
     getCanvasJSONForPage,
+    applyRemoteMove,
     loadTemplate,
     applyBrandKit,
   };
