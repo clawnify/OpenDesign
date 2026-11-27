@@ -93,11 +93,16 @@ export interface EditorContextValue {
   autoSave: boolean;
   setAutoSave: (enabled: boolean) => void;
 
+  pageView: (id: string) => {key: number; json: string} | undefined;
+  canvasReady: (page: Page, rendered: string, draft: string) => void;
+  editors: {id: string; name: string; selection: string | null}[];
+  conflict: {page: Page; layers: string[]; local: string; removed?: boolean} | null;
+  resolveConflict: (choice: "mine" | "theirs") => void;
   // Pages
   pages: Page[];
   activePageId: string | null;
   activePage: Page | null;
-  addPage: () => Promise<void>;
+  addPage: (afterPageId?: string) => Promise<void>;
   duplicatePage: (pageId: string) => Promise<void>;
   deletePage: (pageId: string) => Promise<void>;
   renamePage: (pageId: string, title: string) => Promise<void>;

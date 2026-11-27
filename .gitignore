@@ -7,3 +7,4 @@ uploads/
 .env
 .wrangler/
 .test-build/
+src/server/render-bundle.generated.ts

@@ -4,8 +4,11 @@ import { initUploads, putUpload, getUpload, listFonts, storeFont } from "./uploa
 import { SEED_TEMPLATES } from "./seed-templates.js";
 import { collectFields, fillPages } from "./fields.js";
 import { bodyLimit } from "hono/body-limit";
+import { renderDesignRoute, renderSavedDesign, type RenderEnv } from "./render-design.js";
 
-type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
+type Env = RenderEnv;
+
+import { mergeCanvas, readCanvas } from "../shared/canvas-merge.js";
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
 
@@ -124,8 +127,33 @@ app.openapi(getDesign, async (c) => {
     "SELECT * FROM pages WHERE design_id = ? ORDER BY sort_order",
     [id]
   );
-  return c.json({ ...row, pages }, 200);
+  return c.json({ ...row, pages: pages.map(p => ({...p, canvas_json: JSON.stringify(readCanvas(p.canvas_json))})) }, 200);
 });
+
+// The host joins a room only after this app grants access to the actual design.
+app.get("/api/collaboration/:document", async c => {
+  const id = c.req.param("document");
+  if (!await get("SELECT id FROM designs WHERE id = ?", [id])) return c.notFound();
+  c.header("Clawnify-Document", id);
+  return c.body(null, 204);
+});
+
+const focusLayer = createRoute({
+  method: "post", path: "/api/pages/{pageId}/selection",
+  request: {params: z.object({pageId: z.string()}), body: {content: {"application/json": {schema: z.object({layer_id: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/)})}}}},
+  responses: {200: {description: "Announce the layer you are about to edit", content: {"application/json": {schema: z.object({ok: z.boolean(), editors: z.array(z.object({id: z.string(), name: z.string(), selection: z.string().nullable()})).optional()})}}},
+    404: {description: "Page or layer missing", content: {"application/json": {schema: ErrorSchema}}}},
+});
+app.openapi(focusLayer, async c => {
+  const page = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [c.req.valid("param").pageId]);
+  const id = c.req.valid("json").layer_id;
+  if (!page || !readCanvas(page.canvas_json).objects.some(layer => layer.layerId === id)) return c.json({error: "Layer not found"}, 404);
+  c.header("Clawnify-Document", page.design_id);
+  c.header("Clawnify-Selection", page.id + ":" + id);
+  return c.json({ok: true}, 200);
+});
+
+app.openapi(renderDesignRoute, renderSavedDesign);
 
 // ── Create design ───────────────────────────────────────────────────
 
@@ -201,9 +229,9 @@ app.openapi(updateDesign, async (c) => {
   if (!existing) return c.json({ error: "Not found" }, 404);
 
   await run(
-    `UPDATE designs SET name = ?, canvas_json = ?, width = ?, height = ?, thumbnail_url = ?, is_template = ?, updated_at = datetime('now') WHERE id = ?`,
-    [body.name ?? existing.name, body.canvas_json ?? existing.canvas_json, body.width ?? existing.width, body.height ?? existing.height, body.thumbnail_url ?? existing.thumbnail_url,
-     body.is_template === undefined ? existing.is_template ?? 0 : body.is_template ? 1 : 0, id]
+    `UPDATE designs SET name = COALESCE(?, name), canvas_json = COALESCE(?, canvas_json), width = COALESCE(?, width), height = COALESCE(?, height), thumbnail_url = COALESCE(?, thumbnail_url), is_template = COALESCE(?, is_template), updated_at = datetime('now') WHERE id = ?`,
+    [body.name ?? null, body.canvas_json ?? null, body.width ?? null, body.height ?? null, body.thumbnail_url ?? null,
+     body.is_template === undefined ? null : body.is_template ? 1 : 0, id]
   );
   const row = await get<z.infer<typeof DesignSchema>>("SELECT * FROM designs WHERE id = ?", [id]);
   return c.json(row!, 200);
@@ -457,6 +485,7 @@ const updatePage = createRoute({
           schema: z.object({
             title: z.string().optional(),
             canvas_json: z.string().optional(),
+            base_canvas_json: z.string().optional().describe("Original canvas read before editing. Required when saving artwork."),
           }),
         },
       },
@@ -464,6 +493,9 @@ const updatePage = createRoute({
   },
   responses: {
     200: { content: { "application/json": { schema: PageSchema } }, description: "OK" },
+    400: {description: "Invalid canvas", content: {"application/json": {schema: ErrorSchema}}},
+    428: {description: "Canvas base required", content: {"application/json": {schema: ErrorSchema}}},
+    409: {description: "Concurrent edits", content: {"application/json": {schema: z.object({error: z.string(), current: PageSchema, conflicts: z.array(z.string())})}}},
     404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
   },
 });
@@ -471,14 +503,33 @@ const updatePage = createRoute({
 app.openapi(updatePage, async (c) => {
   const { pageId } = c.req.valid("param");
   const body = c.req.valid("json");
-  const existing = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
-  if (!existing) return c.json({ error: "Not found" }, 404);
-  await run(
-    "UPDATE pages SET title = ?, canvas_json = ? WHERE id = ?",
-    [body.title ?? existing.title, body.canvas_json ?? existing.canvas_json, pageId]
-  );
-  const page = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
-  return c.json(page!, 200);
+  if (body.canvas_json !== undefined && !body.base_canvas_json)
+    return c.json({error: "Read the page and include base_canvas_json when saving artwork."}, 428);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const existing = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
+    if (!existing) return c.json({error: "Not found"}, 404);
+    let canvas = existing.canvas_json;
+    if (body.canvas_json !== undefined) {
+      let result;
+      try { result = mergeCanvas(body.base_canvas_json!, body.canvas_json, existing.canvas_json); }
+      catch { return c.json({error: "Invalid canvas or duplicate layer IDs"}, 400); }
+      if (result.conflicts.length || attempt === 3) return c.json({
+        error: "The page changed. Reconcile your edit with the current page.",
+        current: existing, conflicts: result.conflicts,
+      }, 409);
+      canvas = result.json;
+    }
+    const updated = await get<z.infer<typeof PageSchema>>(
+      "UPDATE pages SET title = COALESCE(?, title), canvas_json = ? WHERE id = ? AND canvas_json = ? RETURNING *",
+      [body.title ?? null, canvas, pageId, existing.canvas_json]);
+    if (!updated) continue;
+    await run("UPDATE designs SET canvas_json = (SELECT canvas_json FROM pages WHERE design_id = designs.id ORDER BY sort_order, id LIMIT 1), updated_at = datetime('now') WHERE id = ?", [updated.design_id]);
+    c.header("Clawnify-Document", updated.design_id);
+    return c.json(updated, 200);
+  }
+  const current = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
+  if (!current) return c.json({error: "Not found"}, 404);
+  return c.json({error: "Page changed while saving", current, conflicts: []}, 409);
 });
 
 // ── Delete page ────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ export const EXPORT_SCALE = 2;
  * Fabric sets `skipControlsDrawing` while exporting, so a selected object's
  * handles never reach the file and the user's selection can stay where it is.
  */
-export function renderPageToPNG(canvas: fabric.Canvas, scale = EXPORT_SCALE): string {
+export function renderPageToPNG(canvas: fabric.StaticCanvas, scale = EXPORT_SCALE): string {
   return canvas.toDataURL({ format: "png", multiplier: scale / canvas.getZoom(), quality: 1 });
 }
 

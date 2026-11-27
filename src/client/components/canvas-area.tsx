@@ -5,7 +5,7 @@ import { PageCanvas } from "./page-canvas";
 
 export function CanvasArea() {
   const {
-    pages, activePageId, setActiveCanvas, canvasWidth, canvasHeight,
+    pageView, pages, activePageId, setActiveCanvas, canvasWidth, canvasHeight,
     zoom, setZoomRaw, setFitScale, addPage, duplicatePage, deletePage, renamePage,
   } = useEditor();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -204,6 +204,7 @@ export function CanvasArea() {
 
             {/* Canvas */}
             <PageCanvas
+              key={pageView(page.id)?.key ?? 0}
               page={page}
               isActive={page.id === activePageId}
               width={canvasWidth}
