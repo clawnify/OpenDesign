@@ -4,8 +4,9 @@ import { initUploads, putUpload, getUpload, listFonts, storeFont } from "./uploa
 import { SEED_TEMPLATES } from "./seed-templates.js";
 import { collectFields, fillPages } from "./fields.js";
 import { bodyLimit } from "hono/body-limit";
+import { renderDesignRoute, renderSavedDesign, type RenderEnv } from "./render-design.js";
 
-type Env = { Bindings: { DB: D1Database; UPLOADS: R2Bucket } };
+type Env = RenderEnv;
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
 
@@ -126,6 +127,8 @@ app.openapi(getDesign, async (c) => {
   );
   return c.json({ ...row, pages }, 200);
 });
+
+app.openapi(renderDesignRoute, renderSavedDesign);
 
 // ── Create design ───────────────────────────────────────────────────
 

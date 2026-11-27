@@ -77,3 +77,5 @@ Use this template when the user wants to:
 - Create branded visual content
 - Generate on-brand variants of one design by filling it with data
 - Keep a team or client on-brand across every graphic (brand kit)
+
+To inspect a saved design, call `GET /api/designs/{id}/render` via the app reader with `as_image: true`. For a specific page pass `page_id`. Use `max_size=1024` for a compact preview. Pass `download=1` for a PNG download at native size, or combine it with `scale=2` for a 2× export.
