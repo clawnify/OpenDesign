@@ -148,7 +148,7 @@ export function LeftSidebar() {
         class="bg-surface border-r border-border overflow-hidden transition-[width] duration-200 ease-in-out"
         style={{ width: isOpen ? "17.5rem" : "0" }}
       >
-        <div class="w-[17.5rem] h-full flex flex-col">
+        <div class="editor-tools-content w-[17.5rem] h-full flex flex-col">
           {activeSection && (
             <>
               <div class="h-12 px-3 flex items-center shrink-0">
