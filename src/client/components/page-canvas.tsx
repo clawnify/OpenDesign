@@ -21,6 +21,13 @@ interface SavedSelection {
   caret?: [number, number];
 }
 
+// Give the same collaborator the same hue in every viewer, even after a reload.
+function collaboratorHue(id: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < id.length; i++) hash = Math.imul(hash ^ id.charCodeAt(i), 16777619);
+  return ((hash >>> 0) % 36000) / 100;
+}
+
 export function PageCanvas({revision, ...props}: PageCanvasProps & {revision: number}) {
   const saved = useRef<SavedSelection>({layers: []});
   return <FabricPage key={revision} {...props} saved={saved} />;
@@ -30,7 +37,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
   const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId, zoom } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
-  const [markers, setMarkers] = useState<{id: string; name: string; left: number; top: number; width: number; height: number}[]>([]);
+  const [markers, setMarkers] = useState<{id: string; name: string; hue: number; labelRow: number; left: number; top: number; width: number; height: number}[]>([]);
   const activeRef = useRef(activePageId === page.id);
   activeRef.current = activePageId === page.id;
   const onActivateRef = useRef(onActivate);
@@ -217,12 +224,19 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
   useEffect(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const selected = editors.filter(editor => editor.selection === page.id || editor.selection?.startsWith(page.id + ":"));
+    const labelRows = new Map<string, number>();
+    const selected = editors.flatMap(editor => {
+      const target = editor.selection;
+      if (!target || (target !== page.id && !target.startsWith(page.id + ":"))) return [];
+      const labelRow = labelRows.get(target) ?? 0;
+      labelRows.set(target, labelRow + 1);
+      return [{target, marker: {id: editor.id, name: editor.name, hue: collaboratorHue(editor.id), labelRow}}];
+    });
     const draw = () => {
-      const next = selected.flatMap(editor => {
-        if (editor.selection === page.id) return [{id: editor.id, name: editor.name, left: 0, top: 0, width, height}];
-        const layer = canvas.getObjects().find(object => page.id + ":" + object.get("layerId") === editor.selection);
-        return layer ? [{id: editor.id, name: editor.name, ...layer.getBoundingRect()}] : [];
+      const next = selected.flatMap(({target, marker}) => {
+        if (target === page.id) return [{...marker, left: 0, top: 0, width, height}];
+        const layer = canvas.getObjects().find(object => page.id + ":" + object.get("layerId") === target);
+        return layer ? [{...marker, ...layer.getBoundingRect()}] : [];
       });
       setMarkers(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };
@@ -251,9 +265,10 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
         <canvas ref={canvasElRef} />
       </div>
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        {markers.map(m => <div key={m.id} data-collaborator={m.name} class="absolute border-2 border-selection"
-          style={{left: m.left * zoom, top: m.top * zoom, width: m.width * zoom, height: m.height * zoom}}>
-          <span class="absolute left-0 top-0 whitespace-nowrap bg-background px-1 text-label text-foreground">{m.name}</span>
+        {markers.map(m => <div key={m.id} data-collaborator={m.name} class="absolute border-2 border-collaborator"
+          style={{"--collaborator-hue": m.hue, left: m.left * zoom, top: m.top * zoom, width: m.width * zoom, height: m.height * zoom}}>
+          <span class="absolute left-0 top-0 whitespace-nowrap rounded-br-xs bg-collaborator px-1 text-label text-on-collaborator"
+            style={{transform: `translateY(${m.labelRow * 100}%)`}}>{m.name}</span>
         </div>)}
       </div>
     </>
