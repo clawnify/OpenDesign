@@ -15,11 +15,23 @@ interface PageCanvasProps {
   onActivate: () => void;
 }
 
-export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: PageCanvasProps) {
-  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors } = useEditor();
+interface SavedSelection {
+  layers: unknown[];
+  caret?: [number, number];
+}
+
+export function PageCanvas({revision, ...props}: PageCanvasProps & {revision: number}) {
+  const saved = useRef<SavedSelection>({layers: []});
+  return <FabricPage key={revision} {...props} saved={saved} />;
+}
+
+function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: PageCanvasProps & {saved: {current: SavedSelection}}) {
+  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const [markers, setMarkers] = useState<{id: string; name: string; left: number; top: number; width: number; height: number}[]>([]);
+  const activeRef = useRef(activePageId === page.id);
+  activeRef.current = activePageId === page.id;
   const onActivateRef = useRef(onActivate);
   onActivateRef.current = onActivate;
 
@@ -155,6 +167,21 @@ export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: P
           fitAll(c);
           c.requestRenderAll();
           canvasReady(page, JSON.stringify(c.toJSON()), initial);
+          if (activeRef.current && !c.getActiveObject()) {
+            const {layers, caret} = saved.current;
+            const surviving = c.getObjects().filter(o => layers.includes(o.get("layerId")));
+            if (surviving.length > 0) {
+              const object = surviving.length === 1 ? surviving[0] : new fabric.ActiveSelection(surviving, {canvas: c});
+              c.setActiveObject(object);
+              if (caret && object instanceof fabric.IText) {
+                object.enterEditing();
+                object.setSelectionStart(Math.min(caret[0], object.text.length));
+                object.setSelectionEnd(Math.min(caret[1], object.text.length));
+                object.updateTextareaPosition();
+              }
+              c.requestRenderAll();
+            }
+          }
         });
       } catch {
         // ignore parse errors
@@ -173,6 +200,12 @@ export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: P
     return () => {
       stopWatchingDrag?.();
       disposed = true;
+      const object = c.getActiveObject();
+      saved.current = {
+        layers: c.getActiveObjects().map(o => o.get("layerId")),
+        caret: object instanceof fabric.IText && object.isEditing ? [object.selectionStart, object.selectionEnd] : undefined,
+      };
+      c.discardActiveObject();
       unregisterCanvas(page.id);
       c.dispose();
       fabricRef.current = null;

@@ -509,6 +509,7 @@ app.openapi(updatePage, async (c) => {
     const existing = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
     if (!existing) return c.json({error: "Not found"}, 404);
     let canvas = existing.canvas_json;
+    let editedLayer: string | null = null;
     if (body.canvas_json !== undefined) {
       let result;
       try { result = mergeCanvas(body.base_canvas_json!, body.canvas_json, existing.canvas_json); }
@@ -518,6 +519,7 @@ app.openapi(updatePage, async (c) => {
         current: existing, conflicts: result.conflicts,
       }, 409);
       canvas = result.json;
+      editedLayer = result.editedLayer;
     }
     const updated = await get<z.infer<typeof PageSchema>>(
       "UPDATE pages SET title = COALESCE(?, title), canvas_json = ? WHERE id = ? AND canvas_json = ? RETURNING *",
@@ -525,6 +527,7 @@ app.openapi(updatePage, async (c) => {
     if (!updated) continue;
     await run("UPDATE designs SET canvas_json = (SELECT canvas_json FROM pages WHERE design_id = designs.id ORDER BY sort_order, id LIMIT 1), updated_at = datetime('now') WHERE id = ?", [updated.design_id]);
     c.header("Clawnify-Document", updated.design_id);
+    if (editedLayer) c.header("Clawnify-Selection", pageId + ":" + editedLayer);
     return c.json(updated, 200);
   }
   const current = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);

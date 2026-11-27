@@ -11,6 +11,7 @@ test("two independent edits survive on a legacy page and on retry", () => {
   const mine = edit(base, 1, {left:50}), theirs = edit(base, 0, {text:"Agent headline"});
   const merged = mergeCanvas(base, mine, theirs);
   assert.deepEqual(merged.conflicts, []);
+  assert.equal(merged.editedLayer, "original-1");
   assert.deepEqual(readCanvas(merged.json).objects.map(o => o.text ?? o.left), ["Agent headline", 50]);
   assert.deepEqual(mergeCanvas(base, mine, merged.json), merged);
 });

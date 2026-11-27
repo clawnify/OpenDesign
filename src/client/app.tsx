@@ -13,7 +13,7 @@ export function App() {
   const { path, navigate, designId } = useRouter();
   const saveSchedulerRef = useRef<() => void>(() => {});
   const canvasState = useCanvasState(() => saveSchedulerRef.current());
-  const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize);
+  const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize, canvasState.applyRemoteMove);
   saveSchedulerRef.current = designState.scheduleSave;
   const layer = (canvasState.selectedObject as {layerId?: string} | null)?.layerId;
   const selection = canvasState.activeCanvasId && layer ? canvasState.activeCanvasId + ":" + layer : null;

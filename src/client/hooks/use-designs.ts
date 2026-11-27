@@ -2,13 +2,15 @@ import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import type { Design, DesignWithPages, Template, Page } from "../types";
 import type { Dimensions } from "../resize";
 import { useCollaborativePages } from "./use-collaborative-pages";
+import { embedded } from "@clawnify/app/client";
 import { api } from "../api";
 
 export function useDesigns(
   getCanvasJSONForPage: (pageId: string) => string,
-  getCanvasSize: () => Dimensions
+  getCanvasSize: () => Dimensions,
+  applyRemoteMove: (id: string, before: string, after: string) => boolean,
 ) {
-  const collaboration = useCollaborativePages(getCanvasJSONForPage);
+  const collaboration = useCollaborativePages(getCanvasJSONForPage, applyRemoteMove);
   const collabRef = useRef(collaboration);
   collabRef.current = collaboration;
   const frameRef = useRef({width: 0, height: 0});
@@ -24,9 +26,10 @@ export function useDesigns(
   const [saveStatus, setSaveStatus] = useState<"saved" | "pending" | "saving" | "error">("saved");
   const [autoSave, setAutoSaveState] = useState(() => {
     try {
-      return localStorage.getItem("opendesign:auto-save") === "true";
+      const saved = localStorage.getItem("opendesign:auto-save");
+      return saved === null ? embedded : saved === "true";
     } catch {
-      return false; // storage blocked (private window, sandboxed iframe)
+      return embedded; // storage blocked (private window, sandboxed iframe)
     }
   });
   const activeIdRef = useRef<string | null>(null);

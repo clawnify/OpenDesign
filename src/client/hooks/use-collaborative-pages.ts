@@ -10,7 +10,8 @@ interface View { key: number; json: string }
 
 /** Fabric adds defaults when it loads a compact canvas. Diff against the actual
  * rendered baseline, then replay just the user's edits on the stored artwork. */
-export function useCollaborativePages(getCanvas: (id: string) => string) {
+export function useCollaborativePages(getCanvas: (id: string) => string,
+  applyMove: (id: string, before: string, after: string) => boolean) {
   const bases = useRef(new Map<string, Base>());
   const views = useRef(new Map<string, View>());
   const [version, setVersion] = useState(0);
@@ -33,7 +34,11 @@ export function useCollaborativePages(getCanvas: (id: string) => string) {
     return {base, rendered, json};
   }
 
-  function stage(page: Page, json: string) {
+  function stage(page: Page, json: string, previous: string) {
+    if (applyMove(page.id, previous, json)) {
+      ready(page, getCanvas(page.id), json);
+      return;
+    }
     bases.current.delete(page.id);
     views.current.set(page.id, {key: (views.current.get(page.id)?.key ?? 0) + 1, json});
     setVersion(n => n + 1);
@@ -46,7 +51,7 @@ export function useCollaborativePages(getCanvas: (id: string) => string) {
       if (!pending.current || pending.current.page.id === page.id) showConflict({page, layers: result.conflicts, local: local.json});
       return;
     }
-    stage(page, result.json);
+    stage(page, result.json, local.json);
     if (pending.current?.page.id === page.id) showConflict(null);
   }
   async function save(page: Page) {
@@ -71,7 +76,7 @@ export function useCollaborativePages(getCanvas: (id: string) => string) {
     if (incoming.conflicts.length) {
       showConflict({page: updated, layers: incoming.conflicts, local: now.json});
     } else if (JSON.stringify(readCanvas(local.json)) !== JSON.stringify(readCanvas(updated.canvas_json))) {
-      stage(updated, incoming.json);
+      stage(updated, incoming.json, now.json);
     } else {
       bases.current.set(page.id, {rendered: local.rendered, draft: updated.canvas_json, saved: updated.canvas_json});
     }
