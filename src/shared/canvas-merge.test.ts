@@ -11,9 +11,23 @@ test("two independent edits survive on a legacy page and on retry", () => {
   const mine = edit(base, 1, {left:50}), theirs = edit(base, 0, {text:"Agent headline"});
   const merged = mergeCanvas(base, mine, theirs);
   assert.deepEqual(merged.conflicts, []);
-  assert.equal(merged.editedLayer, "original-1");
+  assert.deepEqual(merged.target, {layerId: "original-1"});
   assert.deepEqual(readCanvas(merged.json).objects.map(o => o.text ?? o.left), ["Agent headline", 50]);
-  assert.deepEqual(mergeCanvas(base, mine, merged.json), merged);
+  assert.deepEqual(mergeCanvas(base, mine, merged.json), {...merged, target: null});
+});
+
+test("a bulk edit, deletion, reorder or background change selects the whole page", () => {
+  const c = readCanvas(base);
+  const single = {...c, objects: [...c.objects, {layerId: "new", type: "Rect"}]};
+  assert.deepEqual(mergeCanvas(base, JSON.stringify(single), base).target, {layerId: "new"});
+  for (const next of [
+    edit(edit(base, 0, {text:"Updated"}), 1, {left:90}),
+    JSON.stringify({...c, objects: c.objects.slice(1)}),
+    JSON.stringify({...c, objects: [...c.objects].reverse()}),
+    JSON.stringify({...c, background: "#fff"}),
+    JSON.stringify({...single, objects: single.objects.slice(1)}),
+  ]) assert.equal(mergeCanvas(base, next, base).target, "page");
+  assert.equal(mergeCanvas(base, base, edit(base, 0, {text:"Someone else"})).target, null);
 });
 test("both headline choices preserve the sidebar move", () => {
   const mine = edit(edit(base, 0, {text:"Mine"}), 1, {left:90});

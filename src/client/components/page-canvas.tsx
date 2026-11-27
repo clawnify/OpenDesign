@@ -217,9 +217,10 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
   useEffect(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const selected = editors.filter(editor => editor.selection?.startsWith(page.id + ":"));
+    const selected = editors.filter(editor => editor.selection === page.id || editor.selection?.startsWith(page.id + ":"));
     const draw = () => {
       const next = selected.flatMap(editor => {
+        if (editor.selection === page.id) return [{id: editor.id, name: editor.name, left: 0, top: 0, width, height}];
         const layer = canvas.getObjects().find(object => page.id + ":" + object.get("layerId") === editor.selection);
         return layer ? [{id: editor.id, name: editor.name, ...layer.getBoundingRect()}] : [];
       });
@@ -227,7 +228,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
     };
     draw();
     return canvas.on("after:render", draw);
-  }, [editors, page.id]);
+  }, [editors, page.id, width, height]);
 
   // The canvas above is built once, at whatever size the frame had then. A
   // design opened later adopts its own frame (app.tsx), which can land after

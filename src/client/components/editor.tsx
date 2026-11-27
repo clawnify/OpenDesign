@@ -13,6 +13,7 @@ export function Editor() {
     const [pageId, layerId] = selection.split(":");
     const page = pages.find(p => p.id === pageId);
     if (!page) return "";
+    if (!layerId) return page.title;
     const object = readCanvas(page.canvas_json).objects.find(o => o.layerId === layerId);
     return object ? String(object.fieldName || object.text || object.type || "layer").slice(0, 48) : "layer";
   }

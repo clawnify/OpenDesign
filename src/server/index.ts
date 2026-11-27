@@ -138,18 +138,19 @@ app.get("/api/collaboration/:document", async c => {
   return c.body(null, 204);
 });
 
-const focusLayer = createRoute({
+const focusPageSelection = createRoute({
   method: "post", path: "/api/pages/{pageId}/selection",
-  request: {params: z.object({pageId: z.string()}), body: {content: {"application/json": {schema: z.object({layer_id: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/)})}}}},
-  responses: {200: {description: "Announce the layer you are about to edit", content: {"application/json": {schema: z.object({ok: z.boolean(), editors: z.array(z.object({id: z.string(), name: z.string(), selection: z.string().nullable()})).optional()})}}},
+  request: {params: z.object({pageId: z.string()}), body: {content: {"application/json": {schema: z.object({layer_id: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/).nullable().describe("Layer to edit, or null to work on the whole page")})}}}},
+  responses: {200: {description: "Announce the layer or page you are about to edit", content: {"application/json": {schema: z.object({ok: z.boolean(), editors: z.array(z.object({id: z.string(), name: z.string(), selection: z.string().nullable()})).optional()})}}},
     404: {description: "Page or layer missing", content: {"application/json": {schema: ErrorSchema}}}},
 });
-app.openapi(focusLayer, async c => {
+app.openapi(focusPageSelection, async c => {
   const page = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [c.req.valid("param").pageId]);
   const id = c.req.valid("json").layer_id;
-  if (!page || !readCanvas(page.canvas_json).objects.some(layer => layer.layerId === id)) return c.json({error: "Layer not found"}, 404);
+  if (!page) return c.json({error: "Page not found"}, 404);
+  if (id !== null && !readCanvas(page.canvas_json).objects.some(layer => layer.layerId === id)) return c.json({error: "Layer not found"}, 404);
   c.header("Clawnify-Document", page.design_id);
-  c.header("Clawnify-Selection", page.id + ":" + id);
+  c.header("Clawnify-Selection", id === null ? page.id : page.id + ":" + id);
   return c.json({ok: true}, 200);
 });
 
@@ -509,7 +510,7 @@ app.openapi(updatePage, async (c) => {
     const existing = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
     if (!existing) return c.json({error: "Not found"}, 404);
     let canvas = existing.canvas_json;
-    let editedLayer: string | null = null;
+    let selection = body.title !== undefined && body.title !== existing.title ? pageId : null;
     if (body.canvas_json !== undefined) {
       let result;
       try { result = mergeCanvas(body.base_canvas_json!, body.canvas_json, existing.canvas_json); }
@@ -519,7 +520,7 @@ app.openapi(updatePage, async (c) => {
         current: existing, conflicts: result.conflicts,
       }, 409);
       canvas = result.json;
-      editedLayer = result.editedLayer;
+      if (result.target) selection ??= result.target === "page" ? pageId : pageId + ":" + result.target.layerId;
     }
     const updated = await get<z.infer<typeof PageSchema>>(
       "UPDATE pages SET title = COALESCE(?, title), canvas_json = ? WHERE id = ? AND canvas_json = ? RETURNING *",
@@ -527,7 +528,7 @@ app.openapi(updatePage, async (c) => {
     if (!updated) continue;
     await run("UPDATE designs SET canvas_json = (SELECT canvas_json FROM pages WHERE design_id = designs.id ORDER BY sort_order, id LIMIT 1), updated_at = datetime('now') WHERE id = ?", [updated.design_id]);
     c.header("Clawnify-Document", updated.design_id);
-    if (editedLayer) c.header("Clawnify-Selection", pageId + ":" + editedLayer);
+    if (selection) c.header("Clawnify-Selection", selection);
     return c.json(updated, 200);
   }
   const current = await get<z.infer<typeof PageSchema>>("SELECT * FROM pages WHERE id = ?", [pageId]);
