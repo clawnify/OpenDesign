@@ -19,7 +19,7 @@ export function Editor() {
   return (
     <div class="flex flex-col h-full w-full">
       <Toolbar />
-      {editors.length > 0 && <div class="flex gap-3 px-3 py-1 text-label" aria-live="polite">{editors.map(editor =>
+      {editors.length > 0 && <div class="sr-only" aria-live="polite">{editors.map(editor =>
         <span key={editor.id}>{editor.name}{editor.selection ? " · " + layerLabel(editor.selection) : " · In this design"}</span>)}</div>}
       {conflict && <div class="flex items-center gap-2 px-3 py-2 text-label" role="alert">
         {conflict.removed ? <span>{conflict.page.title} was deleted while you had edits.</span> : <span>Overlapping edits on {conflict.page.title}: {conflict.layers.map(id => layerLabel(conflict.page.id + ":" + id) || id).join(", ") || "page changed"}.</span>}

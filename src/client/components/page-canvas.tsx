@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "preact/hooks";
 import type { RefObject } from "preact";
+import { DesignCanvas } from "../lib/design-canvas";
 import { watchDragScroll } from "../lib/drag-scroll";
 import { readCanvas } from "../../shared/canvas-merge";
 import { fitAll } from "../lib/fit-text";
@@ -26,7 +27,7 @@ export function PageCanvas({revision, ...props}: PageCanvasProps & {revision: nu
 }
 
 function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: PageCanvasProps & {saved: {current: SavedSelection}}) {
-  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId } = useEditor();
+  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId, zoom } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const [markers, setMarkers] = useState<{id: string; name: string; left: number; top: number; width: number; height: number}[]>([]);
@@ -38,7 +39,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
   useEffect(() => {
     if (!canvasElRef.current || fabricRef.current) return;
 
-    const c = new fabric.Canvas(canvasElRef.current, {
+    const c = new DesignCanvas(canvasElRef.current, {
       width,
       height,
       backgroundColor: "#ffffff",
@@ -244,14 +245,16 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
   }, [width, height]);
 
   return (
-    <div style={{ width, height, position: "relative" }}>
-      <canvas ref={canvasElRef} />
+    <>
+      <div class="absolute left-0 top-0 origin-top-left" style={{ width, height, transform: `scale(${zoom})` }}>
+        <canvas ref={canvasElRef} />
+      </div>
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         {markers.map(m => <div key={m.id} data-collaborator={m.name} class="absolute border-2 border-selection"
-          style={{left: m.left, top: m.top, width: m.width, height: m.height}}>
-          <span class="absolute left-0 top-0 bg-background px-1 text-label text-foreground">{m.name}</span>
+          style={{left: m.left * zoom, top: m.top * zoom, width: m.width * zoom, height: m.height * zoom}}>
+          <span class="absolute left-0 top-0 whitespace-nowrap bg-background px-1 text-label text-foreground">{m.name}</span>
         </div>)}
       </div>
-    </div>
+    </>
   );
 }
