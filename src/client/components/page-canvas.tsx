@@ -1,6 +1,7 @@
-import { useRef, useEffect } from "preact/hooks";
+import { useRef, useEffect, useState } from "preact/hooks";
 import type { RefObject } from "preact";
 import { watchDragScroll } from "../lib/drag-scroll";
+import { readCanvas } from "../../shared/canvas-merge";
 import { fitAll } from "../lib/fit-text";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
@@ -15,9 +16,10 @@ interface PageCanvasProps {
 }
 
 export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: PageCanvasProps) {
-  const { registerCanvas, unregisterCanvas } = useEditor();
+  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
+  const [markers, setMarkers] = useState<{id: string; name: string; left: number; top: number; width: number; height: number}[]>([]);
   const onActivateRef = useRef(onActivate);
   onActivateRef.current = onActivate;
 
@@ -135,20 +137,31 @@ export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: P
 
     // Apply to any newly added objects
     c.on("object:added", (e) => {
-      if (e.target) applyCustomControls(e.target);
+      if (e.target) {
+        const obj = e.target as fabric.FabricObject & {layerId?: string};
+        if (!obj.layerId || c.getObjects().some(other => other !== obj && other.get("layerId") === obj.layerId))
+          obj.layerId = crypto.randomUUID();
+        applyCustomControls(obj);
+      }
     });
 
     // Load page content
-    if (page.canvas_json && page.canvas_json !== "{}") {
+    const initial = pageView(page.id)?.json ?? page.canvas_json;
+    let disposed = false;
+    if (initial && initial !== "{}") {
       try {
-        c.loadFromJSON(JSON.parse(page.canvas_json)).then(() => {
+        c.loadFromJSON(readCanvas(initial)).then(() => {
+          if (disposed) return;
           fitAll(c);
           c.requestRenderAll();
+          canvasReady(page, JSON.stringify(c.toJSON()), initial);
         });
       } catch {
         // ignore parse errors
       }
     }
+
+    if (!initial || initial === "{}") canvasReady(page, JSON.stringify(c.toJSON()), initial || "{}");
 
     // On mouse down, activate this canvas (use ref to avoid stale closure)
     c.on("mouse:down", () => onActivateRef.current());
@@ -159,11 +172,28 @@ export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: P
 
     return () => {
       stopWatchingDrag?.();
+      disposed = true;
       unregisterCanvas(page.id);
       c.dispose();
       fabricRef.current = null;
     };
   }, []);
+
+  // Selection markers live outside Fabric so PNG and PDF exports stay clean.
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const selected = editors.filter(editor => editor.selection?.startsWith(page.id + ":"));
+    const draw = () => {
+      const next = selected.flatMap(editor => {
+        const layer = canvas.getObjects().find(object => page.id + ":" + object.get("layerId") === editor.selection);
+        return layer ? [{id: editor.id, name: editor.name, ...layer.getBoundingRect()}] : [];
+      });
+      setMarkers(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+    };
+    draw();
+    return canvas.on("after:render", draw);
+  }, [editors, page.id]);
 
   // The canvas above is built once, at whatever size the frame had then. A
   // design opened later adopts its own frame (app.tsx), which can land after
@@ -180,5 +210,15 @@ export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: P
     c.requestRenderAll();
   }, [width, height]);
 
-  return <canvas ref={canvasElRef} />;
+  return (
+    <div style={{ width, height, position: "relative" }}>
+      <canvas ref={canvasElRef} />
+      <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        {markers.map(m => <div key={m.id} data-collaborator={m.name} class="absolute border-2 border-selection"
+          style={{left: m.left, top: m.top, width: m.width, height: m.height}}>
+          <span class="absolute left-0 top-0 bg-background px-1 text-label text-foreground">{m.name}</span>
+        </div>)}
+      </div>
+    </div>
+  );
 }

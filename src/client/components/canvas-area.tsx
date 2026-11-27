@@ -9,7 +9,7 @@ const PAGE_HEADER_HEIGHT = 36;
 
 export function CanvasArea() {
   const {
-    pages, activePageId, loadedDesignId, canvas, setActiveCanvas, canvasWidth, canvasHeight,
+    pageView, pages, activePageId, loadedDesignId, canvas, setActiveCanvas, canvasWidth, canvasHeight,
     zoom, zoomToFit, setZoomRaw, setFitScale, fitScale, addPage, duplicatePage, deletePage, renamePage,
   } = useEditor();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -209,6 +209,7 @@ export function CanvasArea() {
             >
               <div class="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${zoom})` }}>
                 <PageCanvas
+                  key={pageView(page.id)?.key ?? 0}
                   page={page}
                   width={canvasWidth}
                   height={canvasHeight}
@@ -217,6 +218,7 @@ export function CanvasArea() {
                 />
               </div>
             </div>
+
           </div>
         ))}
 

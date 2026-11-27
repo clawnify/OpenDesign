@@ -6,7 +6,7 @@ import { useRouter } from "./hooks/use-router";
 import { Editor } from "./components/editor";
 import { Home } from "./components/home";
 import { useFonts } from "./fonts";
-import { AppNav, reportLocation } from "@clawnify/app/client";
+import { AppNav, reportLocation, useDocumentCollaboration, useHostChanges } from "@clawnify/app/client";
 import { useEffect, useRef } from "preact/hooks";
 
 export function App() {
@@ -15,6 +15,16 @@ export function App() {
   const canvasState = useCanvasState(() => saveSchedulerRef.current());
   const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize);
   saveSchedulerRef.current = designState.scheduleSave;
+  const layer = (canvasState.selectedObject as {layerId?: string} | null)?.layerId;
+  const selection = canvasState.activeCanvasId && layer ? canvasState.activeCanvasId + ":" + layer : null;
+  const openDocument = designId && designState.loadedDesignId === designId ? designId : null;
+  const editors = useDocumentCollaboration(openDocument, selection, designState.refresh);
+  useHostChanges(() => { if (openDocument) designState.refresh(); });
+  useEffect(() => {
+    if (!openDocument) return;
+    const interval = setInterval(() => {if (!document.hidden) designState.refresh();}, 60000);
+    return () => clearInterval(interval);
+  }, [openDocument, designState.refresh]);
   const brandState = useBrandKits();
   const fontState = useFonts();
 
@@ -110,6 +120,7 @@ export function App() {
 
   // Editor view
   const contextValue = {
+    editors,
     ...canvasState,
     ...designState,
     ...brandState,

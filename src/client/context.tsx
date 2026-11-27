@@ -93,6 +93,11 @@ export interface EditorContextValue {
   autoSave: boolean;
   setAutoSave: (enabled: boolean) => void;
 
+  pageView: (id: string) => {key: number; json: string} | undefined;
+  canvasReady: (page: Page, rendered: string, draft: string) => void;
+  editors: {id: string; name: string; selection: string | null}[];
+  conflict: {page: Page; layers: string[]; local: string; removed?: boolean} | null;
+  resolveConflict: (choice: "mine" | "theirs") => void;
   // Pages
   pages: Page[];
   activePageId: string | null;

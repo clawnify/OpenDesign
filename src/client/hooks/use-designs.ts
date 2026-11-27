@@ -1,12 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import type { Design, DesignWithPages, Template, Page } from "../types";
 import type { Dimensions } from "../resize";
+import { useCollaborativePages } from "./use-collaborative-pages";
 import { api } from "../api";
 
 export function useDesigns(
   getCanvasJSONForPage: (pageId: string) => string,
   getCanvasSize: () => Dimensions
 ) {
+  const collaboration = useCollaborativePages(getCanvasJSONForPage);
+  const collabRef = useRef(collaboration);
+  collabRef.current = collaboration;
+  const frameRef = useRef({width: 0, height: 0});
   const [designs, setDesigns] = useState<Design[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeDesign, setActiveDesign] = useState<Design | null>(null);
@@ -67,39 +72,19 @@ export function useDesigns(
     setSaving(true);
     if (activeIdRef.current === designId) setSaveStatus("saving");
     try {
-      // Snapshot the active design before awaiting; navigation may switch canvases mid-save.
-      const snapshots = pagesRef.current
-        .filter((page) => page.design_id === designId)
-        .map((page) => ({ page, json: getCanvasJSONForPage(page.id) }))
-        .filter(({ json }) => json && json !== "{}");
-      for (const { page, json } of snapshots) {
+      for (const page of pagesRef.current.filter(item => item.design_id === designId)) {
         if (!pagesRef.current.some((current) => current.id === page.id)) continue;
-        try {
-          const updatedPage = await api<Page>("PUT", `/api/pages/${page.id}`, { canvas_json: json });
-          updatePages((prev) => prev.map((p) => (p.id === updatedPage.id ? updatedPage : p)));
-        } catch (e) {
-          // A page deleted while this save was in flight is already safely gone.
-          if (!(e instanceof Error && e.message === "Not found")) throw e;
-        }
+        const updatedPage = await collabRef.current.save(page);
+        updatePages(prev => prev.map(p => p.id === updatedPage.id ? updatedPage : p));
       }
-      // Also update design's canvas_json with first page for backwards compat
-      const firstPage = activeIdRef.current === designId
-        ? pagesRef.current.find((page) => page.design_id === designId)
-        : undefined;
-      const firstSavedPage = firstPage
-        ? snapshots.find(({ page }) => page.id === firstPage.id) ?? snapshots[0]
-        : snapshots[0];
-      const firstPageJson = firstSavedPage?.json || firstSavedPage?.page.canvas_json || firstPage?.canvas_json || "{}";
       // The frame is part of the design: without it a resized design reopens
       // at its old dimensions with artwork scaled for the new ones.
-      const updated = await api<Design>("PUT", `/api/designs/${designId}`, {
-        canvas_json: firstPageJson,
-        width,
-        height,
-      });
-      setDesigns((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      if (activeIdRef.current === designId && (width !== frameRef.current.width || height !== frameRef.current.height)) {
+        const updated = await api<Design>("PUT", `/api/designs/${designId}`, {width, height});
+        setDesigns(prev => prev.map(d => d.id === updated.id ? updated : d));
+        if (activeIdRef.current === designId) {frameRef.current = {width,height}; setActiveDesign(updated);}
+      }
       if (activeIdRef.current === designId) {
-        setActiveDesign(updated);
         setSaveStatus("saved");
       }
     } catch (e) {
@@ -163,6 +148,8 @@ export function useDesigns(
       try {
         const d = await api<DesignWithPages>("GET", `/api/designs/${id}`);
         if (request !== designLoadRef.current) return;
+        collabRef.current.reset();
+        frameRef.current = {width: d.width, height: d.height};
         updatePages(d.pages);
         setActiveDesign(d);
         activeIdRef.current = d.id;
@@ -243,12 +230,14 @@ export function useDesigns(
   const duplicatePage = useCallback(
     async (pageId: string) => {
       // Save current canvas state for the page being duplicated
+      const original = pagesRef.current.find(p => p.id === pageId);
+      if (!original) return;
       const json = getCanvasJSONForPage(pageId);
       if (json && json !== "{}") {
         try {
-          await api<Page>("PUT", `/api/pages/${pageId}`, { canvas_json: json });
+          await collabRef.current.save(original);
         } catch {
-          // best effort
+          return;
         }
       }
       try {
@@ -322,7 +311,48 @@ export function useDesigns(
     }
   }, []);
 
+  const refresh = useCallback(() => {
+    const id = activeIdRef.current;
+    if (!id) return;
+    const session = designLoadRef.current;
+    const task = async () => {
+      if (activeIdRef.current !== id || session !== designLoadRef.current) return;
+      const next = await api<DesignWithPages>("GET", "/api/designs/" + id);
+      if (activeIdRef.current !== id || session !== designLoadRef.current) return;
+      for (const page of next.pages) collabRef.current.receive(page);
+      const ids = new Set(next.pages.map(page => page.id));
+      const recoverable = pagesRef.current.filter(page => !ids.has(page.id) && collabRef.current.removed(page));
+      updatePages([...next.pages, ...recoverable]);
+    };
+    saveQueueRef.current = saveQueueRef.current.then(task).catch(error => console.error("Failed to refresh design", error));
+  }, [updatePages]);
+
+  async function resolveConflict(choice: "mine" | "theirs") {
+    const conflict = collaboration.conflict;
+    if (!conflict) return;
+    if (conflict.removed) {
+      const old = conflict.page;
+      try {
+        const recovered = choice === "mine" ? await api<Page>("POST", "/api/designs/" + old.design_id + "/pages", {
+          title: old.title + " (recovered)", canvas_json: collaboration.draft(old.id)?.json ?? conflict.local,
+        }) : null;
+        if (activeIdRef.current !== old.design_id) return;
+        updatePages(prev => [...prev.filter(p => p.id !== old.id), ...(recovered ? [recovered] : [])]);
+        collaboration.showConflict(null);
+        setSaveStatus("saved");
+      } catch { setSaveStatus("error"); }
+      return;
+    }
+    collaboration.receive(conflict.page, choice);
+    updatePages(prev => prev.map(p => p.id === conflict.page.id ? conflict.page : p));
+    setSaveStatus("pending");
+  }
   return {
+    pageView: collaboration.view,
+    canvasReady: collaboration.ready,
+    conflict: collaboration.conflict,
+    resolveConflict,
+    refresh,
     designs,
     templates,
     activeDesign,
