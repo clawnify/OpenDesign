@@ -126,27 +126,32 @@ export function Toolbar() {
           <Home size={16} />
         </button>
         {activeDesign && (
-          editingName ? (
-            <input
-              class="field h-7 w-48"
-              value={nameValue}
-              onInput={(e) => setNameValue((e.target as HTMLInputElement).value)}
-              onBlur={finishRename}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") finishRename();
-                if (e.key === "Escape") setEditingName(false);
-              }}
-              autoFocus
-            />
-          ) : (
-            <span
-              class="text-heading-3 text-foreground cursor-text truncate max-w-[16rem]"
-              title="Double-click to rename"
-              onDblClick={startRename}
-            >
-              {activeDesign.name}
+          <div class="flex min-w-0 flex-col justify-center">
+            {editingName ? (
+              <input
+                class="field h-7 w-48"
+                value={nameValue}
+                onInput={(e) => setNameValue((e.target as HTMLInputElement).value)}
+                onBlur={finishRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") finishRename();
+                  if (e.key === "Escape") setEditingName(false);
+                }}
+                autoFocus
+              />
+            ) : (
+              <span
+                class="text-heading-3 text-foreground cursor-text truncate max-w-[16rem]"
+                title="Double-click to rename"
+                onDblClick={startRename}
+              >
+                {activeDesign.name}
+              </span>
+            )}
+            <span role="status" class={`h-4 w-[15ch] shrink-0 whitespace-nowrap text-fine leading-4 ${saveStatus === "error" ? "text-danger" : "text-muted"}`}>
+              {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : autoSave ? "All changes saved" : ""}
             </span>
-          )
+          </div>
         )}
 
         <div class="relative">
@@ -370,18 +375,14 @@ export function Toolbar() {
             Template
           </label>
         )}
-        {activeDesign && (
-          <span class={`text-fine whitespace-nowrap ${saveStatus === "error" ? "text-danger" : "text-muted"}`} aria-live="polite">
-            {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : autoSave ? "All changes saved" : ""}
-          </span>
-        )}
         <button
           class="btn btn-primary"
           onClick={saveDesign}
+          aria-busy={saving}
           disabled={saving || !activeDesign}
         >
           <Save size={14} />
-          {saving ? "Saving…" : "Save"}
+          Save
         </button>
       </div>
     </div>
