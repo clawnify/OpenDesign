@@ -633,7 +633,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       const pageId = activeCanvasIdRef.current;
       if (canvas && pageId) {
         isRestoringRef.current.add(pageId);
-        canvas.loadFromJSON(JSON.parse(template.canvas_json)).then(() => {
+        canvas.loadFromJSON(readCanvas(template.canvas_json)).then(() => {
           fitAll(canvas);
           canvas.requestRenderAll();
           isRestoringRef.current.delete(pageId);

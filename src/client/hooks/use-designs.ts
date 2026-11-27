@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import type { Design, DesignWithPages, Template, Page } from "../types";
+import { newPageCanvas } from "../../shared/page-background";
 import type { Dimensions } from "../resize";
 import { useCollaborativePages } from "./use-collaborative-pages";
 import { embedded } from "@clawnify/app/client";
@@ -110,7 +111,6 @@ export function useDesigns(
     try {
       const d = await api<Design>("POST", "/api/designs", {
         name: "Untitled Design",
-        canvas_json: "{}",
       });
       setDesigns((prev) => [d, ...prev]);
       return d.id;
@@ -216,9 +216,13 @@ export function useDesigns(
     if (!activeIdRef.current) return;
     try {
       const body: Record<string, unknown> = {};
-      if (afterPageId) {
-        const afterPage = pages.find((p) => p.id === afterPageId);
-        if (afterPage) body.after_sort_order = afterPage.sort_order;
+      const previous = afterPageId ? pages.find(p => p.id === afterPageId) : pages.at(-1);
+      if (previous) {
+        if (afterPageId) body.after_sort_order = previous.sort_order;
+        const draft = collabRef.current.draft(previous.id);
+        if (draft && draft.json !== draft.base.saved) {
+          body.canvas_json = newPageCanvas(draft.json, getCanvasSize());
+        }
       }
       const page = await api<Page>("POST", `/api/designs/${activeIdRef.current}/pages`, body);
       // Re-fetch all pages to get correct sort_order after shifts
@@ -228,7 +232,7 @@ export function useDesigns(
     } catch (e) {
       console.error("Failed to add page:", e);
     }
-  }, [pages, updatePages]);
+  }, [pages, getCanvasSize, updatePages]);
 
   const duplicatePage = useCallback(
     async (pageId: string) => {

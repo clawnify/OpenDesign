@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import * as fabric from "fabric";
+import { readCanvas } from "../../shared/canvas-merge";
 import { fitAll } from "../lib/fit-text";
 
 interface Props {
@@ -19,9 +20,9 @@ export function CanvasPreview({ json, width, height, alt }: Props) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
-    let parsed: unknown;
+    let parsed;
     try {
-      parsed = JSON.parse(json || "{}");
+      parsed = readCanvas(json || "{}");
     } catch {
       return;
     }
@@ -29,7 +30,7 @@ export function CanvasPreview({ json, width, height, alt }: Props) {
     const el = document.createElement("canvas");
     const canvas = new fabric.StaticCanvas(el, { width, height });
     canvas
-      .loadFromJSON(parsed as Record<string, unknown>)
+      .loadFromJSON(parsed)
       .then(() => {
         if (!live) return;
         fitAll(canvas);

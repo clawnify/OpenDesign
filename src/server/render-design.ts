@@ -1,5 +1,6 @@
 import { createRoute, orgId, z } from "@clawnify/app";
 import { ClawnifyServicesError, renderScreenshot } from "@clawnify/services";
+import { WHITE_BACKGROUND } from "../shared/page-background.js";
 import { get } from "./db.js";
 import { fontCss, script, scriptHash } from "./render-bundle.generated.js";
 import { listFonts } from "./uploads.js";
@@ -174,6 +175,7 @@ export async function renderSavedDesign(c: Context<RenderEnv, string, {
     if (!canvas || Array.isArray(canvas) || typeof canvas !== "object") {
       throw new RenderInputError("The saved design has invalid canvas data.");
     }
+    canvas.background ||= WHITE_BACKGROUND;
     const { fonts, css } = await prepareAssets(canvas, c.env.UPLOADS, json.length);
     const html = renderHtml({ canvas, fonts, width, height, scale: multiplier }, css);
     if (new TextEncoder().encode(html).byteLength > MAX_INPUT_BYTES) {

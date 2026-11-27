@@ -153,6 +153,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
         const obj = e.target as fabric.FabricObject & {layerId?: string};
         if (!obj.layerId || c.getObjects().some(other => other !== obj && other.get("layerId") === obj.layerId))
           obj.layerId = crypto.randomUUID();
+        if (obj.get("_isBgImage")) obj.set({ selectable: false, evented: false });
         applyCustomControls(obj);
       }
     });
