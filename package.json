@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/build-render.mjs && wrangler d1 execute open-design-db --local --file=schema.sql && concurrently -n ui,api -c cyan,green \"vite\" \"wrangler dev --port 8787\"",
-    "test": "esbuild src/shared/canvas-merge.test.ts src/server/fields.test.ts src/client/fonts.test.ts --bundle --platform=node --format=esm --outdir=.test-build --out-extension:.js=.mjs --loader:.css=empty --log-level=warning && node --test .test-build/shared/canvas-merge.test.mjs .test-build/server/fields.test.mjs .test-build/client/fonts.test.mjs",
+    "test": "esbuild src/shared/*.test.ts src/server/fields.test.ts src/server/uploads.test.ts src/client/fonts.test.ts --bundle --platform=node --format=esm --outdir=.test-build --out-extension:.js=.mjs --loader:.css=empty --log-level=warning && node --test .test-build/shared/*.test.mjs .test-build/server/fields.test.mjs .test-build/server/uploads.test.mjs .test-build/client/fonts.test.mjs",
     "build": "node scripts/build-render.mjs && vite build"
   },
   "dependencies": {

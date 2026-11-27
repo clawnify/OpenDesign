@@ -161,6 +161,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
         const obj = e.target as fabric.FabricObject & {layerId?: string};
         if (!obj.layerId || c.getObjects().some(other => other !== obj && other.get("layerId") === obj.layerId))
           obj.layerId = crypto.randomUUID();
+        if (obj.get("_isBgImage")) obj.set({ selectable: false, evented: false });
         applyCustomControls(obj);
       }
     });
@@ -168,13 +169,18 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
     // Load page content
     const initial = pageView(page.id)?.json ?? page.canvas_json;
     let disposed = false;
+    let stopPagePreview: (() => void) | undefined;
+    const ready = () => {
+      stopPagePreview = registerCanvas(page.id, c);
+      canvasReady(page, JSON.stringify(c.toJSON()), initial || "{}");
+    };
     if (initial && initial !== "{}") {
       try {
         c.loadFromJSON(readCanvas(initial)).then(() => {
           if (disposed) return;
           fitAll(c);
           c.requestRenderAll();
-          canvasReady(page, JSON.stringify(c.toJSON()), initial);
+          ready();
           if (activeRef.current && !c.getActiveObject()) {
             const {layers, caret} = saved.current;
             const surviving = c.getObjects().filter(o => layers.includes(o.get("layerId")));
@@ -196,17 +202,17 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
       }
     }
 
-    if (!initial || initial === "{}") canvasReady(page, JSON.stringify(c.toJSON()), initial || "{}");
+    if (!initial || initial === "{}") ready();
 
     // On mouse down, activate this canvas (use ref to avoid stale closure)
     c.on("mouse:down", () => onActivateRef.current());
 
     fabricRef.current = c;
-    registerCanvas(page.id, c);
     const stopWatchingDrag = scrollAreaRef.current && watchDragScroll(c, scrollAreaRef.current);
 
     return () => {
       stopWatchingDrag?.();
+      stopPagePreview?.();
       disposed = true;
       const object = c.getActiveObject();
       saved.current = {

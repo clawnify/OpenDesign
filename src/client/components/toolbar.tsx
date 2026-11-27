@@ -114,9 +114,9 @@ export function Toolbar() {
   };
 
   return (
-    <div class="flex h-14 items-center justify-between gap-3 px-3 bg-surface border-b border-border shrink-0">
+    <div class="editor-toolbar flex h-14 items-center justify-between gap-3 px-3 bg-surface border-b border-border shrink-0">
       {/* Left: Home + Design name + Canvas size */}
-      <div class="flex items-center gap-3">
+      <div class="editor-toolbar-title flex items-center gap-3">
         <button
           class="btn btn-ghost btn-icon"
           onClick={() => navigate("/")}
@@ -265,7 +265,7 @@ export function Toolbar() {
       </div>
 
       {/* Right: Zoom + Export + Save */}
-      <div class="flex items-center gap-1.5">
+      <div class="editor-toolbar-actions flex items-center gap-1.5">
         <button
           class="btn btn-ghost btn-icon"
           onClick={zoomOut}

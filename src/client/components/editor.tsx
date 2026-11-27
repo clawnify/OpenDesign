@@ -1,4 +1,6 @@
 import { useEditor } from "../context";
+import { useState } from "preact/hooks";
+import { X, SlidersHorizontal, Shapes } from "lucide-preact";
 import { readCanvas } from "../../shared/canvas-merge";
 import { CanvasArea } from "./canvas-area";
 import { Toolbar } from "./toolbar";
@@ -7,7 +9,8 @@ import { RightSidebar } from "./right-sidebar";
 import { PagesBar } from "./pages-bar";
 
 export function Editor() {
-  const {editors, conflict, resolveConflict, pages} = useEditor();
+  const {editors, conflict, resolveConflict, pages, selectedObject} = useEditor();
+  const [mobilePanel, setMobilePanel] = useState<"tools" | "properties" | null>(null);
   function layerLabel(selection: string | null) {
     if (!selection) return "";
     const [pageId, layerId] = selection.split(":");
@@ -32,14 +35,24 @@ export function Editor() {
         <button class="btn btn-secondary" onClick={() => resolveConflict("mine")}>{conflict.removed ? "Recover as a new page" : "Keep my conflicting edits"}</button>
         <button class="btn btn-secondary" onClick={() => resolveConflict("theirs")}>{conflict.removed ? "Discard local page" : "Use saved edits"}</button>
       </div>}
-      <div class="flex flex-1 min-h-0">
-        <LeftSidebar />
+      <div class="editor-workspace flex flex-1 min-h-0">
+        <div class={`editor-side editor-tools ${mobilePanel === "tools" ? "is-open" : ""}`}>
+          <button class="editor-panel-close" aria-label="Close tools" onClick={() => setMobilePanel(null)}><X size={20} /></button>
+          <LeftSidebar />
+        </div>
         <div class="flex-1 flex flex-col min-w-0">
           <CanvasArea />
           <PagesBar />
         </div>
-        <RightSidebar />
+        <div class={`editor-side editor-properties ${mobilePanel === "properties" ? "is-open" : ""}`}>
+          <button class="editor-panel-close" aria-label="Close properties" onClick={() => setMobilePanel(null)}><X size={20} /></button>
+          <RightSidebar />
+        </div>
       </div>
+      <nav class="editor-mobile-controls" aria-label="Editor panels">
+        <button class="btn btn-secondary" aria-expanded={mobilePanel === "tools"} onClick={() => setMobilePanel(mobilePanel === "tools" ? null : "tools")}><Shapes size={18} /> Tools</button>
+        <button class="btn btn-secondary" aria-expanded={mobilePanel === "properties"} onClick={() => setMobilePanel(mobilePanel === "properties" ? null : "properties")}><SlidersHorizontal size={18} /> {selectedObject ? "Edit selection" : "Canvas settings"}</button>
+      </nav>
     </div>
   );
 }

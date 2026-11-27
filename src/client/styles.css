@@ -542,3 +542,58 @@ select.field {
   background-position: right 0.625rem center;
   padding-right: 1.75rem;
 }
+
+/* Compact editor panels sit above the canvas so both remain accessible. */
+.editor-side { display: flex; min-height: 0; }
+.editor-panel-close, .editor-mobile-controls { display: none; }
+
+@media (max-width: 800px) {
+  .editor-workspace { position: relative; }
+  .editor-side { display: none; }
+  .editor-side.is-open {
+    display: flex;
+    position: absolute;
+    z-index: 30;
+    top: 0;
+    bottom: 0;
+    max-width: min(100%, 24rem);
+    box-shadow: 0 4px 18px rgb(0 0 0 / 0.2);
+  }
+  .editor-tools { left: 0; }
+  .editor-properties { right: 0; }
+  .editor-side > aside { max-width: 100%; min-height: 0; overflow-y: auto; }
+  .editor-tools > aside > div:first-child { overflow-y: auto; }
+  .editor-tools > aside > div:nth-child(2) { min-width: 0; }
+  .editor-tools-content { width: 100%; }
+  .editor-panel-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    z-index: 1;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    background: var(--surface);
+    color: var(--foreground);
+    border-radius: 0.5rem;
+  }
+  .editor-mobile-controls {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem max(0.5rem, env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .editor-mobile-controls .btn { flex: 1; min-height: 2.75rem; }
+  .editor-toolbar { height: auto; min-height: 3.5rem; flex-wrap: wrap; justify-content: flex-start; gap: 0.25rem 0.75rem; padding-block: 0.35rem; }
+  .editor-toolbar-title { flex: 1 1 100%; min-width: 0; }
+  .editor-toolbar-title > div:nth-child(2) { flex: 1; min-width: 0; }
+  .editor-toolbar-title .text-heading-3 { max-width: 100%; }
+  .editor-toolbar-actions { flex: 1; min-width: 0; flex-wrap: wrap; }
+  .editor-toolbar .btn-icon { min-width: 2.25rem; min-height: 2.25rem; }
+  .editor-toolbar .menu { position: fixed; right: 0.75rem; left: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100dvh - 4rem); overflow-y: auto; }
+  .editor-toolbar-title .menu { top: 3rem; }
+  .editor-toolbar-actions .menu { top: 7rem; }
+}

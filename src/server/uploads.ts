@@ -12,10 +12,21 @@ function sanitize(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9._-]/g, "");
 }
 
-export async function putUpload(filename: string, data: ArrayBuffer | Uint8Array, contentType: string): Promise<string> {
+export async function putUpload(filename: string, data: ArrayBuffer | Uint8Array, contentType: string, name: string): Promise<string> {
   const safe = sanitize(filename);
-  await _bucket.put(safe, data, { httpMetadata: { contentType } });
+  await _bucket.put(safe, data, { httpMetadata: { contentType }, customMetadata: { name } });
   return `/api/uploads/${safe}`;
+}
+
+export async function listImages(bucket: R2Bucket, cursor?: string) {
+  const page = await bucket.list({ cursor, limit: 60, include: ["customMetadata"] });
+  const images = page.objects
+    .filter(({ key }) => /^[a-zA-Z0-9._-]+\.(png|jpe?g|gif|webp|svg)$/i.test(key))
+    .map(({ key, customMetadata }) => ({
+      name: customMetadata?.name || key,
+      url: `/api/uploads/${key}`,
+    }));
+  return { images, cursor: page.truncated ? page.cursor : null };
 }
 
 export async function getUpload(filename: string): Promise<{ data: ArrayBuffer; contentType: string } | null> {
