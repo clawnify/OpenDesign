@@ -9,11 +9,13 @@ const PAGE_HEADER_HEIGHT = 36;
 
 export function CanvasArea() {
   const {
-    pages, activePageId, loadedDesignId, setActiveCanvas, canvasWidth, canvasHeight,
+    pages, activePageId, loadedDesignId, canvas, setActiveCanvas, canvasWidth, canvasHeight,
     zoom, zoomToFit, setZoomRaw, setFitScale, fitScale, addPage, duplicatePage, deletePage, renamePage,
   } = useEditor();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{ id: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const renameRef = useRef<HTMLInputElement>(null);
@@ -37,6 +39,7 @@ export function CanvasArea() {
 
   useLayoutEffect(() => {
     zoomToFit();
+    setPan({ x: 0, y: 0 });
     wrapperRef.current?.scrollTo(0, 0);
   }, [loadedDesignId, canvasWidth, canvasHeight, zoomToFit]);
 
@@ -111,10 +114,29 @@ export function CanvasArea() {
   const topPadding = Math.max(SIDE_GUTTER, (viewportHeight - pageHeight) / 2 - PAGE_HEADER_HEIGHT);
 
   return (
-    <div ref={wrapperRef} class="min-h-0 flex-1 overflow-auto bg-canvas">
+    <div
+      ref={wrapperRef}
+      class="min-h-0 flex-1 overflow-auto bg-canvas"
+      onPointerDown={(event) => {
+        if (event.button !== 0 || (event.target as Element).closest("[data-page-id], button, input")) return;
+        canvas?.discardActiveObject();
+        canvas?.requestRenderAll();
+        dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.id !== event.pointerId) return;
+        setPan({ x: drag.panX + event.clientX - drag.x, y: drag.panY + event.clientY - drag.y });
+      }}
+      onPointerUp={(event) => {
+        if (dragRef.current?.id === event.pointerId) dragRef.current = null;
+      }}
+      onPointerCancel={() => { dragRef.current = null; }}
+    >
       <div
         class="flex flex-col items-center gap-4 pb-4"
-        style={{ width: `max(100%, ${pageWidth + 2 * SIDE_GUTTER}px)`, paddingTop: topPadding }}
+        style={{ width: `max(100%, ${pageWidth + 2 * SIDE_GUTTER}px)`, paddingTop: topPadding, transform: `translate(${pan.x}px, ${pan.y}px)` }}
       >
         {pages.map((page) => (
           <div key={page.id} data-page-id={page.id} style={{ width: Math.max(pageWidth, 128), maxWidth: "100%" }}>
