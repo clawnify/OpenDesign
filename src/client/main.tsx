@@ -7,7 +7,7 @@ import "./styles.css";
 // no argument list any more. Registering them here is what makes them survive
 // every save and reload, without touching the toJSON call sites. `maxLines` and
 // `fitFontSize` are the fit-to-lines setting (lib/fit-text.ts).
-fabric.FabricObject.customProperties = ["fieldName", "maxLines", "fitFontSize"];
+fabric.FabricObject.customProperties = ["layerId", "fieldName", "maxLines", "fitFontSize"];
 
 // Agent mode (`?agent` in the address): bigger targets and every hover-only
 // control shown, from the [data-agent] rules in styles.css.

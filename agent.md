@@ -1,5 +1,7 @@
 # OpenDesign
 
+When editing an existing design, open it first and read its pages. Keep each page's original `canvas_json`. Identify the layer by its stable `layerId`. Announce it via `POST /api/pages/{pageId}/selection` with `layer_id` before editing. On Clawnify this returns the other editors and their selected layers. Choose a different layer or coordinate if someone is already on yours. Save the edited page with its original `base_canvas_json` and the new `canvas_json`, keeping layer IDs intact. A 409 includes the current page and conflicting layers. Present both changes for a choice before replacing someone's edit. The platform shows your selection to people editing this design.
+
 A design editor for creating professional social media graphics, especially LinkedIn posts.
 
 ## Features
