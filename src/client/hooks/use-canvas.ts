@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
 import { readCanvas, same } from "../../shared/canvas-merge";
+import { listenToCanvasClipboard } from "../lib/canvas-clipboard";
 import { fitAll, fitText } from "../lib/fit-text";
 import * as fabric from "fabric";
 import type { Template, BrandKit } from "../types";
@@ -692,6 +693,20 @@ export function useCanvasState(onChange: () => void = () => {}) {
   );
 
   // ── Keyboard shortcuts ──────────────────────────────────────────────
+
+  useEffect(() => listenToCanvasClipboard(getActiveCanvas, (canvas, change) => {
+    const pageId = activeCanvasIdRef.current;
+    if (!pageId || isRestoringRef.current.has(pageId)) return;
+    // A multi-layer cut or paste is one undoable edit and one autosave.
+    isRestoringRef.current.add(pageId);
+    try {
+      change();
+    } finally {
+      isRestoringRef.current.delete(pageId);
+      canvas.requestRenderAll();
+      saveHistory(pageId);
+    }
+  }), [getActiveCanvas, saveHistory]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
