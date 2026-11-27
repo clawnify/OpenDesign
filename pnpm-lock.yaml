@@ -205,7 +205,7 @@ packages:
     engines: {node: '>=6.9.0'}
 
   '@clawnify/app@0.4.12':
-    resolution: {integrity: sha512-7joWPbDt9NmRAhNzprlUM2Lo009MYo40kYAptJOywW8D7eC0qUtHyoZn5RSD+ZZc5TfXttD6UnLL2Esq24WVbQ==}
+    resolution: {integrity: sha512-RsMvsBi1bQOkrhYzTZ/xTwjioXza/oGZzYP3iKcHSLoycB9JuiRBQTgRI4mge7XxH8LoJQtyiD7+zqAzCUd4hA==}
     peerDependencies:
       '@hono/zod-openapi': '>=0.18 <1'
       '@phosphor-icons/react': '>=2'
