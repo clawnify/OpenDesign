@@ -44,8 +44,9 @@ export function useCanvasState(onChange: () => void = () => {}) {
     { width: number; height: number; pages: Map<string, string> } | null
   >(null);
   const [canUndoResize, setCanUndoResize] = useState(false);
-  const [zoom, setZoom] = useState(0.58);
-  const [fitScale, setFitScale] = useState(0.58);
+  const [manualZoom, setZoom] = useState<number | null>(null);
+  const [fitScale, setFitScale] = useState(1);
+  const zoom = manualZoom ?? fitScale;
   const [exporting, setExporting] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -486,16 +487,16 @@ export function useCanvasState(onChange: () => void = () => {}) {
   // ── Zoom ────────────────────────────────────────────────────────────
 
   const zoomToFit = useCallback(() => {
-    setZoom(fitScale);
-  }, [fitScale]);
+    setZoom(null);
+  }, []);
 
   const zoomIn = useCallback(() => {
-    setZoom((z) => Math.min(z * 1.2, 3));
-  }, []);
+    setZoom((z) => Math.min((z ?? fitScale) * 1.2, 3));
+  }, [fitScale]);
 
   const zoomOut = useCallback(() => {
-    setZoom((z) => Math.max(z / 1.2, 0.05));
-  }, []);
+    setZoom((z) => Math.max((z ?? fitScale) / 1.2, Math.min(fitScale, 0.05)));
+  }, [fitScale]);
 
   // ── Export ──────────────────────────────────────────────────────────
 

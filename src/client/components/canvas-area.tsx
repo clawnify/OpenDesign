@@ -1,73 +1,87 @@
-import { useRef, useEffect, useState } from "preact/hooks";
+import { useRef, useEffect, useLayoutEffect, useState } from "preact/hooks";
 import { Plus, Copy, Trash2 } from "lucide-preact";
 import { useEditor } from "../context";
 import { PageCanvas } from "./page-canvas";
 
+const SIDE_GUTTER = 24;
+const VERTICAL_GUTTER = 64; // Room for the page title and Add page button.
+const PAGE_HEADER_HEIGHT = 36;
+
 export function CanvasArea() {
   const {
-    pageView, pages, activePageId, setActiveCanvas, canvasWidth, canvasHeight,
-    zoom, setZoomRaw, setFitScale, addPage, duplicatePage, deletePage, renamePage,
+    pageView, pages, activePageId, loadedDesignId, canvas, setActiveCanvas, canvasWidth, canvasHeight,
+    zoom, zoomToFit, setZoomRaw, setFitScale, fitScale, addPage, duplicatePage, deletePage, renamePage,
   } = useEditor();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const pageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const dragRef = useRef<{ id: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const renameRef = useRef<HTMLInputElement>(null);
+  const zoomAnchor = useRef<{ canvas: HTMLCanvasElement; x: number; y: number; u: number; v: number } | null>(null);
 
-  // Calculate fit scale on mount
-  useEffect(() => {
+  useLayoutEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
-    const padding = 120;
-    const availW = wrapper.clientWidth - padding;
-    const fit = Math.min(availW / canvasWidth, 1);
-    setFitScale(fit);
-    setZoomRaw(0.58);
-  }, [canvasWidth, canvasHeight]);
-
-  // Recalculate on resize
-  useEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-    const obs = new ResizeObserver(() => {
-      const padding = 120;
-      const availW = wrapper.clientWidth - padding;
-      const fit = Math.min(availW / canvasWidth, 1);
-      setFitScale(fit);
-    });
+    const measure = () => {
+      const { clientWidth, clientHeight } = wrapper;
+      const availableWidth = Math.max(1, clientWidth - 2 * SIDE_GUTTER);
+      const availableHeight = Math.max(1, clientHeight - 2 * VERTICAL_GUTTER);
+      setFitScale(Math.min(availableWidth / canvasWidth, availableHeight / canvasHeight, 1));
+      setViewportHeight(clientHeight);
+    };
+    measure();
+    const obs = new ResizeObserver(measure);
     obs.observe(wrapper);
     return () => obs.disconnect();
-  }, [canvasWidth, canvasHeight]);
+  }, [canvasWidth, canvasHeight, setFitScale]);
+
+  useLayoutEffect(() => {
+    zoomToFit();
+    setPan({ x: 0, y: 0 });
+    wrapperRef.current?.scrollTo(0, 0);
+  }, [loadedDesignId, canvasWidth, canvasHeight, zoomToFit]);
 
   // Cmd+wheel zoom towards mouse position
-  const zoomRef = useRef(zoom);
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useLayoutEffect(() => {
+    const anchor = zoomAnchor.current;
+    const wrapper = wrapperRef.current;
+    zoomAnchor.current = null;
+    if (!anchor || !wrapper?.contains(anchor.canvas)) return;
+    const rect = anchor.canvas.getBoundingClientRect();
+    wrapper.scrollLeft += rect.left + rect.width * anchor.u - anchor.x;
+    wrapper.scrollTop += rect.top + rect.height * anchor.v - anchor.y;
+  }, [zoom]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
     const handler = (e: WheelEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       e.preventDefault();
-      const prevZoom = zoomRef.current;
       const factor = e.deltaY > 0 ? 0.95 : 1.05;
-      const newZoom = Math.min(Math.max(prevZoom * factor, 0.05), 3);
-
-      // Mouse position relative to scroll container
-      const rect = wrapper.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left + wrapper.scrollLeft;
-      const mouseY = e.clientY - rect.top + wrapper.scrollTop;
-
-      // Adjust scroll to keep point under mouse stable
-      const scale = newZoom / prevZoom;
-      wrapper.scrollLeft = mouseX * scale - (e.clientX - rect.left);
-      wrapper.scrollTop = mouseY * scale - (e.clientY - rect.top);
-
+      const newZoom = Math.min(Math.max(zoom * factor, Math.min(fitScale, 0.05)), 3);
+      if (newZoom === zoom) return;
+      const page = (e.target as Element).closest("[data-page-id]");
+      const canvas = page?.querySelector<HTMLCanvasElement>(".upper-canvas")
+        ?? wrapper.querySelector<HTMLCanvasElement>(".upper-canvas");
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        zoomAnchor.current = {
+          canvas,
+          x: e.clientX,
+          y: e.clientY,
+          u: (e.clientX - rect.left) / rect.width,
+          v: (e.clientY - rect.top) / rect.height,
+        };
+      }
       setZoomRaw(newZoom);
     };
     wrapper.addEventListener("wheel", handler, { passive: false });
     return () => wrapper.removeEventListener("wheel", handler);
-  }, [setZoomRaw]);
+  }, [zoom, fitScale, setZoomRaw]);
 
   // Auto-activate first page if none active
   useEffect(() => {
@@ -96,58 +110,46 @@ export function CanvasArea() {
     setRenamingId(null);
   };
 
-  // Inverse scale for page headers so they don't zoom
-  const inverseScale = 1 / zoom;
+  const pageWidth = canvasWidth * zoom;
+  const pageHeight = canvasHeight * zoom;
+  const topPadding = Math.max(SIDE_GUTTER, (viewportHeight - pageHeight) / 2 - PAGE_HEADER_HEIGHT);
 
   return (
     <div
       ref={wrapperRef}
-      class="flex-1 overflow-auto bg-canvas"
+      class="min-h-0 flex-1 overflow-auto bg-canvas"
+      style={{ cursor: isPanning ? "grabbing" : "grab" }}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || (event.target as Element).closest("[data-page-id], button, input")) return;
+        canvas?.discardActiveObject();
+        canvas?.requestRenderAll();
+        dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
+        setIsPanning(true);
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.id !== event.pointerId) return;
+        setPan({ x: drag.panX + event.clientX - drag.x, y: drag.panY + event.clientY - drag.y });
+      }}
+      onPointerUp={(event) => {
+        if (dragRef.current?.id === event.pointerId) {
+          dragRef.current = null;
+          setIsPanning(false);
+        }
+      }}
+      onPointerCancel={() => { dragRef.current = null; setIsPanning(false); }}
+      onLostPointerCapture={() => { dragRef.current = null; setIsPanning(false); }}
     >
-      {/* Spacer div — its dimensions match the visual (scaled) size so overflow scrollbars work */}
       <div
-        style={{
-          width: Math.max((canvasWidth + 80) * zoom, wrapperRef.current?.clientWidth ?? 0),
-          minHeight: "100%",
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-      <div
-        class="flex flex-col items-center"
-        style={{
-          transform: `scale(${zoom})`,
-          transformOrigin: "center top",
-          padding: "40px 40px 80px",
-        }}
+        class="flex flex-col items-center gap-4 pb-4"
+        style={{ width: `max(100%, ${pageWidth + 2 * SIDE_GUTTER}px)`, paddingTop: topPadding, transform: `translate(${pan.x}px, ${pan.y}px)` }}
       >
         {pages.map((page) => (
-          <div
-            key={page.id}
-            class="mb-10"
-            data-page-id={page.id}
-            ref={(el) => {
-              if (el) pageRefs.current.set(page.id, el);
-            }}
-          >
-            {/* Page header — inverse scaled to stay fixed size */}
-            <div
-              style={{
-                height: 32 * inverseScale,
-                marginBottom: 4 * inverseScale,
-              }}
-            >
-            <div
-              class="group/header flex items-center justify-between py-1.5"
-              style={{
-                transform: `scale(${inverseScale})`,
-                transformOrigin: "left top",
-                width: canvasWidth * zoom,
-                height: 32,
-              }}
-            >
+          <div key={page.id} data-page-id={page.id} style={{ width: Math.max(pageWidth, 128), maxWidth: "100%", cursor: "default" }}>
+            <div class="flex h-8 items-center justify-between gap-1">
               {/* Title — click to rename */}
-              <div class="flex items-center gap-1.5">
+              <div class="flex min-w-0 items-center gap-1.5">
                 {renamingId === page.id ? (
                   <input
                     ref={renameRef}
@@ -162,7 +164,7 @@ export function CanvasArea() {
                   />
                 ) : (
                   <span
-                    class="text-label text-muted cursor-text hover:text-foreground"
+                    class="cursor-text truncate text-label text-muted hover:text-foreground"
                     onClick={() => startRename(page.id, page.title)}
                   >
                     {page.title}
@@ -171,7 +173,7 @@ export function CanvasArea() {
               </div>
 
               {/* Action icons — visible on hover */}
-              <div class="flex items-center gap-0.5">
+              <div class="flex shrink-0 items-center gap-0.5">
                 <button
                   class="btn btn-ghost btn-icon"
                   onClick={() => addPage(page.id)}
@@ -200,39 +202,33 @@ export function CanvasArea() {
                 )}
               </div>
             </div>
+            {/* Only the scaled drawing contributes to the scrollable size. */}
+            <div
+              class={`relative mx-auto mt-1 overflow-clip ring-1 ring-border ${page.id === activePageId ? "outline-2 outline-offset-4 outline-selection" : ""}`}
+              style={{ width: pageWidth, height: pageHeight }}
+            >
+              <div class="absolute left-0 top-0 origin-top-left" style={{ transform: `scale(${zoom})` }}>
+                <PageCanvas
+                  key={pageView(page.id)?.key ?? 0}
+                  page={page}
+                  width={canvasWidth}
+                  height={canvasHeight}
+                  scrollAreaRef={wrapperRef}
+                  onActivate={() => setActiveCanvas(page.id)}
+                />
+              </div>
             </div>
 
-            {/* Canvas */}
-            <PageCanvas
-              key={pageView(page.id)?.key ?? 0}
-              page={page}
-              isActive={page.id === activePageId}
-              width={canvasWidth}
-              height={canvasHeight}
-              onActivate={() => setActiveCanvas(page.id)}
-            />
           </div>
         ))}
 
-        {/* Add page button — inverse scaled */}
-        <div style={{ height: 40 * inverseScale }}>
-          <div
-            style={{
-              transform: `scale(${inverseScale})`,
-              transformOrigin: "center top",
-              height: 40,
-            }}
-          >
-            <button
-              class="dropzone border-faint flex items-center gap-1.5 h-7 px-3 rounded-sm text-label"
-              onClick={() => addPage()}
-            >
-              <Plus size={14} />
-              Add page
-            </button>
-          </div>
-        </div>
-      </div>
+        <button
+          class="dropzone border-faint flex items-center gap-1.5 h-7 px-3 rounded-sm text-label"
+          onClick={() => addPage()}
+        >
+          <Plus size={14} />
+          Add page
+        </button>
       </div>
     </div>
   );

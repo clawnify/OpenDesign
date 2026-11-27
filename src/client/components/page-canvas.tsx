@@ -1,5 +1,7 @@
 import { useRef, useEffect, useState } from "preact/hooks";
-import {readCanvas} from "../../shared/canvas-merge";
+import type { RefObject } from "preact";
+import { watchDragScroll } from "../lib/drag-scroll";
+import { readCanvas } from "../../shared/canvas-merge";
 import { fitAll } from "../lib/fit-text";
 import * as fabric from "fabric";
 import { useEditor } from "../context";
@@ -7,13 +9,13 @@ import type { Page } from "../types";
 
 interface PageCanvasProps {
   page: Page;
-  isActive: boolean;
   width: number;
   height: number;
+  scrollAreaRef: RefObject<HTMLDivElement>;
   onActivate: () => void;
 }
 
-export function PageCanvas({ page, isActive, width, height, onActivate }: PageCanvasProps) {
+export function PageCanvas({ page, width, height, scrollAreaRef, onActivate }: PageCanvasProps) {
   const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
@@ -166,8 +168,10 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
 
     fabricRef.current = c;
     registerCanvas(page.id, c);
+    const stopWatchingDrag = scrollAreaRef.current && watchDragScroll(c, scrollAreaRef.current);
 
     return () => {
+      stopWatchingDrag?.();
       disposed = true;
       unregisterCanvas(page.id);
       c.dispose();
@@ -207,10 +211,7 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
   }, [width, height]);
 
   return (
-    <div
-      class={`ring-1 ring-border ${isActive ? "outline-2 outline-offset-4 outline-selection" : ""}`}
-      style={{ width, height, position: "relative" }}
-    >
+    <div style={{ width, height, position: "relative" }}>
       <canvas ref={canvasElRef} />
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         {markers.map(m => <div key={m.id} data-collaborator={m.name} class="absolute border-2 border-selection"
