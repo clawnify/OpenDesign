@@ -8,6 +8,7 @@ import { renderDesignRoute, renderSavedDesign, type RenderEnv } from "./render-d
 
 type Env = RenderEnv;
 
+import { newPageCanvas } from "../shared/page-background.js";
 import { mergeCanvas, readCanvas } from "../shared/canvas-merge.js";
 
 const app = createApp<Env>({ title: "OpenDesign API", version: "1.0.0" });
@@ -179,7 +180,7 @@ const createDesign = createRoute({
 
 app.openapi(createDesign, async (c) => {
   const { name, canvas_json, width, height } = c.req.valid("json");
-  const canvasData = canvas_json || "{}";
+  const canvasData = canvas_json || newPageCanvas();
   // RETURNING hands back the row just inserted; "newest by created_at" can pick
   // another design created in the same second.
   const row = await get<z.infer<typeof DesignSchema>>(
@@ -424,6 +425,12 @@ app.openapi(addPage, async (c) => {
   const count = await get<{ c: number }>("SELECT COUNT(*) as c FROM pages WHERE design_id = ?", [id]);
   const title = body.title || `Page ${(count?.c ?? 0) + 1}`;
 
+  const previous = await get<{ sort_order: number; canvas_json: string; width: number; height: number }>(
+    `SELECT p.sort_order, p.canvas_json, d.width, d.height FROM pages p JOIN designs d ON p.design_id = d.id
+     WHERE d.id = ? AND (? IS NULL OR p.sort_order <= ?) ORDER BY p.sort_order DESC, p.id DESC LIMIT 1`,
+    [id, body.after_sort_order ?? null, body.after_sort_order ?? null]
+  );
+  const canvasData = body.canvas_json || newPageCanvas(previous?.canvas_json, previous);
   let insertOrder: number;
   if (body.after_sort_order !== undefined) {
     await run(
@@ -432,13 +439,12 @@ app.openapi(addPage, async (c) => {
     );
     insertOrder = body.after_sort_order + 1;
   } else {
-    const maxOrder = await get<{ m: number }>("SELECT COALESCE(MAX(sort_order), -1) as m FROM pages WHERE design_id = ?", [id]);
-    insertOrder = (maxOrder?.m ?? -1) + 1;
+    insertOrder = (previous?.sort_order ?? -1) + 1;
   }
 
   const page = await get<z.infer<typeof PageSchema>>(
     "INSERT INTO pages (design_id, title, canvas_json, sort_order) VALUES (?, ?, ?, ?) RETURNING *",
-    [id, title, body.canvas_json || "{}", insertOrder]
+    [id, title, canvasData, insertOrder]
   );
   return c.json(page!, 200);
 });

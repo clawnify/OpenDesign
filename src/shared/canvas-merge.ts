@@ -1,3 +1,5 @@
+import { WHITE_BACKGROUND } from "./page-background";
+
 type Layer = Record<string, unknown> & { layerId: string };
 type Canvas = Record<string, unknown> & { objects: Layer[] };
 
@@ -26,7 +28,7 @@ export function readCanvas(json: string): Canvas {
     used.add(id);
     return {...layer, layerId: id};
   });
-  return {...input, objects};
+  return {...input, background: input.background || WHITE_BACKGROUND, objects};
 }
 
 /** Replay the local delta over the current page. Deletion is a value, including delete-vs-edit conflicts. */
