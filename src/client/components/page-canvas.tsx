@@ -161,6 +161,21 @@ export function PageCanvas({ page, isActive, width, height, onActivate }: PageCa
     };
   }, []);
 
+  // The canvas above is built once, at whatever size the frame had then. A
+  // design opened later adopts its own frame (app.tsx), which can land after
+  // this canvas was made and before it was registered, so applyDimensions in
+  // use-canvas never reached it: a 1080x1350 design drew on a 1080x1080
+  // canvas and exports read the same cut-off canvas. Follow the frame.
+  useEffect(() => {
+    const c = fabricRef.current;
+    if (!c) return;
+    const dpr = window.devicePixelRatio || 1;
+    c.setDimensions({ width: width * dpr, height: height * dpr }, { cssOnly: false });
+    c.setDimensions({ width, height }, { cssOnly: true });
+    c.setViewportTransform([dpr, 0, 0, dpr, 0, 0]);
+    c.requestRenderAll();
+  }, [width, height]);
+
   return (
     <div
       class={`ring-1 ring-border ${isActive ? "outline-2 outline-offset-4 outline-selection" : ""}`}
