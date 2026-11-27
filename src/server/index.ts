@@ -1,6 +1,6 @@
 import { createApp, createRoute, z } from "@clawnify/app";
 import { query, get, run } from "./db.js";
-import { initUploads, putUpload, getUpload, listFonts, storeFont } from "./uploads.js";
+import { initUploads, putUpload, getUpload, listImages, listFonts, storeFont } from "./uploads.js";
 import { SEED_TEMPLATES } from "./seed-templates.js";
 import { collectFields, fillPages } from "./fields.js";
 import { bodyLimit } from "hono/body-limit";
@@ -749,6 +749,8 @@ app.post("/api/fonts", bodyLimit({
   }
 });
 
+app.get("/api/uploads", async (c) => c.json(await listImages(c.env.UPLOADS, c.req.query("cursor"))));
+
 app.post("/api/uploads", async (c) => {
   const body = await c.req.parseBody();
   const file = body["file"];
@@ -762,10 +764,13 @@ app.post("/api/uploads", async (c) => {
     return c.json({ error: "Unsupported file type" }, 400);
   }
 
-  const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  // R2 lists keys in ascending order. Put new images before legacy timestamp
+  // keys and put the most recent new images on the first page.
+  const reverseTime = String(Number.MAX_SAFE_INTEGER - Date.now()).padStart(16, "0");
+  const filename = `0-${reverseTime}-${crypto.randomUUID()}.${ext}`;
   const data = await file.arrayBuffer();
   const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : ext === "svg" ? "image/svg+xml" : "image/png";
-  const url = await putUpload(filename, data, mime);
+  const url = await putUpload(filename, data, mime, file.name.slice(0, 255));
 
   return c.json({ url }, 200);
 });

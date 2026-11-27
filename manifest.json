@@ -21,6 +21,7 @@
     "src/client/components/editor.tsx",
     "src/client/components/home.tsx",
     "src/client/components/left-sidebar.tsx",
+    "src/client/components/upload-gallery.tsx",
     "src/client/components/page-canvas.tsx",
     "src/client/components/pages-bar.tsx",
     "src/client/components/right-sidebar.tsx",

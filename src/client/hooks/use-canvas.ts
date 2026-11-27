@@ -5,6 +5,7 @@ import * as fabric from "fabric";
 import type { Template, BrandKit } from "../types";
 import { reflowCanvas, type Dimensions } from "../resize";
 import { buildColorMap, brandFontFor, isHex } from "../lib/brand";
+import { moveToPage, pageUnderObject, watchPagePreview } from "../lib/page-drag";
 import { downloadDataURL, exportPagesToPDF, renderPageToPNG, slugify } from "../lib/export";
 
 const MAX_HISTORY = 50;
@@ -23,8 +24,24 @@ const SHAPE_DEFAULTS = {
 };
 
 interface CanvasHistory {
-  entries: string[];
+  entries: { json: string; transfer?: readonly [string, string] }[];
   index: number;
+}
+
+// A page transfer crosses both undo stacks together. If either page has a
+// newer edit, undo that edit first so restoring the pair preserves it.
+function historyStep(histories: Map<string, CanvasHistory>, id: string, direction: -1 | 1) {
+  const history = histories.get(id);
+  if (!history?.entries[history.index + direction]) return [];
+  const edge = history.index + (direction === 1 ? 1 : 0);
+  const transfer = history.entries[edge].transfer;
+  if (!transfer) return [id];
+  const paired = transfer.every(pageId => {
+    const other = histories.get(pageId);
+    return other?.entries[other.index + (direction === 1 ? 1 : 0)]?.transfer === transfer
+      && !!other.entries[other.index + direction];
+  });
+  return paired ? transfer : [];
 }
 
 export function useCanvasState(onChange: () => void = () => {}) {
@@ -61,19 +78,14 @@ export function useCanvasState(onChange: () => void = () => {}) {
   }, []);
 
   // Update undo/redo state for active canvas
-  const updateUndoRedoState = useCallback((pageId: string) => {
-    if (pageId !== activeCanvasIdRef.current) return;
-    const hist = historyMapRef.current.get(pageId);
-    if (!hist) {
-      setCanUndo(false);
-      setCanRedo(false);
-      return;
-    }
-    setCanUndo(hist.index > 0);
-    setCanRedo(hist.index < hist.entries.length - 1);
+  const updateUndoRedoState = useCallback(() => {
+    const pageId = activeCanvasIdRef.current;
+    if (!pageId) return;
+    setCanUndo(historyStep(historyMapRef.current, pageId, -1).length > 0);
+    setCanRedo(historyStep(historyMapRef.current, pageId, 1).length > 0);
   }, []);
 
-  const saveHistory = useCallback((pageId: string) => {
+  const saveHistory = useCallback((pageId: string, transfer?: readonly [string, string]) => {
     if (isRestoringRef.current.has(pageId)) return;
     const canvas = canvasMapRef.current.get(pageId);
     if (!canvas) return;
@@ -91,18 +103,51 @@ export function useCanvasState(onChange: () => void = () => {}) {
     }
     // Truncate forward history
     hist.entries = hist.entries.slice(0, hist.index + 1);
-    hist.entries.push(json);
+    hist.entries.push({json, transfer});
     if (hist.entries.length > MAX_HISTORY) {
       hist.entries.shift();
     } else {
       hist.index = hist.entries.length - 1;
     }
-    updateUndoRedoState(pageId);
+    updateUndoRedoState();
     onChangeRef.current();
+  }, [updateUndoRedoState]);
+
+  const unregisterCanvas = useCallback((pageId: string) => {
+    canvasMapRef.current.delete(pageId);
+    historyMapRef.current.delete(pageId);
+    updateUndoRedoState();
+    // The snapshot holds JSON keyed by page id. Once a page it captured is
+    // gone -- page deleted, or the editor left for another design -- it can no
+    // longer be restored onto the canvases that are actually mounted.
+    if (resizeSnapshotRef.current?.pages.has(pageId)) {
+      resizeSnapshotRef.current = null;
+      setCanUndoResize(false);
+    }
+  }, [updateUndoRedoState]);
+
+  const setActiveCanvas = useCallback((pageId: string) => {
+    const prevId = activeCanvasIdRef.current;
+    if (prevId === pageId) return;
+
+    // Clear selection on previous canvas
+    if (prevId) {
+      const prevCanvas = canvasMapRef.current.get(prevId);
+      if (prevCanvas) {
+        prevCanvas.discardActiveObject();
+        prevCanvas.requestRenderAll();
+      }
+    }
+
+    activeCanvasIdRef.current = pageId;
+    setActiveCanvasId(pageId);
+    setSelectedObject(null);
+    updateUndoRedoState();
   }, [updateUndoRedoState]);
 
   const registerCanvas = useCallback((pageId: string, canvas: fabric.Canvas) => {
     canvasMapRef.current.set(pageId, canvas);
+    if (pageId === activeCanvasIdRef.current) setSelectionVersion(v => v + 1);
 
     // Selection events
     canvas.on("selection:created", (e) => {
@@ -123,7 +168,23 @@ export function useCanvasState(onChange: () => void = () => {}) {
 
     // History events
     canvas.on("object:added", () => saveHistory(pageId));
-    canvas.on("object:modified", () => saveHistory(pageId));
+    canvas.on("object:modified", ({ target, action }) => {
+      const destination = action === "drag" && pageUnderObject(canvas, target, canvasMapRef.current);
+      if (!destination || isRestoringRef.current.has(destination.id)) {
+        saveHistory(pageId);
+        return;
+      }
+      const pair = [pageId, destination.id] as const;
+      pair.forEach(id => isRestoringRef.current.add(id));
+      try {
+        const selection = moveToPage(canvas, target, destination);
+        setActiveCanvas(destination.id);
+        destination.canvas.setActiveObject(selection);
+      } finally {
+        pair.forEach(id => isRestoringRef.current.delete(id));
+      }
+      for (const id of pair) saveHistory(id, pair);
+    });
     canvas.on("object:removed", () => saveHistory(pageId));
     canvas.on("text:changed", (e) => {
       // A fitted text shrinks as it is typed, so the layout never gets a line it has no room for.
@@ -131,44 +192,11 @@ export function useCanvasState(onChange: () => void = () => {}) {
       onChangeRef.current();
     });
 
-    // Initial history snapshot
-    setTimeout(() => {
-      const json = JSON.stringify(canvas.toJSON());
-      historyMapRef.current.set(pageId, { entries: [json], index: 0 });
-      updateUndoRedoState(pageId);
-    }, 100);
-  }, [saveHistory, updateUndoRedoState]);
-
-  const unregisterCanvas = useCallback((pageId: string) => {
-    canvasMapRef.current.delete(pageId);
-    historyMapRef.current.delete(pageId);
-    // The snapshot holds JSON keyed by page id. Once a page it captured is
-    // gone -- page deleted, or the editor left for another design -- it can no
-    // longer be restored onto the canvases that are actually mounted.
-    if (resizeSnapshotRef.current?.pages.has(pageId)) {
-      resizeSnapshotRef.current = null;
-      setCanUndoResize(false);
-    }
-  }, []);
-
-  const setActiveCanvas = useCallback((pageId: string) => {
-    const prevId = activeCanvasIdRef.current;
-    if (prevId === pageId) return;
-
-    // Clear selection on previous canvas
-    if (prevId) {
-      const prevCanvas = canvasMapRef.current.get(prevId);
-      if (prevCanvas) {
-        prevCanvas.discardActiveObject();
-        prevCanvas.requestRenderAll();
-      }
-    }
-
-    activeCanvasIdRef.current = pageId;
-    setActiveCanvasId(pageId);
-    setSelectedObject(null);
-    updateUndoRedoState(pageId);
-  }, [updateUndoRedoState]);
+    const json = JSON.stringify(canvas.toJSON());
+    historyMapRef.current.set(pageId, { entries: [{json}], index: 0 });
+    updateUndoRedoState();
+    return watchPagePreview(canvas, canvasMapRef.current);
+  }, [saveHistory, setActiveCanvas, updateUndoRedoState]);
 
   // ── Text ────────────────────────────────────────────────────────────
 
@@ -367,42 +395,31 @@ export function useCanvasState(onChange: () => void = () => {}) {
 
   // ── Undo / Redo ─────────────────────────────────────────────────────
 
-  const restoreFromHistory = useCallback(
-    (index: number) => {
-      const pageId = activeCanvasIdRef.current;
-      const canvas = getActiveCanvas();
-      if (!canvas || !pageId) return;
-      const hist = historyMapRef.current.get(pageId);
-      if (!hist || index < 0 || index >= hist.entries.length) return;
-      isRestoringRef.current.add(pageId);
-      hist.index = index;
-      const json = hist.entries[index];
-      canvas.loadFromJSON(JSON.parse(json)).then(() => {
+  const restoreFromHistory = useCallback(async (direction: -1 | 1) => {
+    const pageId = activeCanvasIdRef.current;
+    if (!pageId) return;
+    const pages = historyStep(historyMapRef.current, pageId, direction);
+    if (!pages.length || pages.some(id => isRestoringRef.current.has(id))) return;
+    pages.forEach(id => isRestoringRef.current.add(id));
+    try {
+      await Promise.all(pages.map(async id => {
+        const canvas = canvasMapRef.current.get(id)!;
+        const history = historyMapRef.current.get(id)!;
+        canvas.discardActiveObject();
+        await canvas.loadFromJSON(history.entries[history.index + direction].json);
+        history.index += direction;
         fitAll(canvas);
         canvas.requestRenderAll();
-        isRestoringRef.current.delete(pageId);
-        updateUndoRedoState(pageId);
-        onChangeRef.current();
-      });
-    },
-    [getActiveCanvas, updateUndoRedoState]
-  );
+      }));
+      onChangeRef.current();
+    } finally {
+      pages.forEach(id => isRestoringRef.current.delete(id));
+      updateUndoRedoState();
+    }
+  }, [updateUndoRedoState]);
 
-  const undo = useCallback(() => {
-    const pageId = activeCanvasIdRef.current;
-    if (!pageId) return;
-    const hist = historyMapRef.current.get(pageId);
-    if (!hist) return;
-    restoreFromHistory(hist.index - 1);
-  }, [restoreFromHistory]);
-
-  const redo = useCallback(() => {
-    const pageId = activeCanvasIdRef.current;
-    if (!pageId) return;
-    const hist = historyMapRef.current.get(pageId);
-    if (!hist) return;
-    restoreFromHistory(hist.index + 1);
-  }, [restoreFromHistory]);
+  const undo = useCallback(() => restoreFromHistory(-1), [restoreFromHistory]);
+  const redo = useCallback(() => restoreFromHistory(1), [restoreFromHistory]);
 
   // ── Canvas size ─────────────────────────────────────────────────────
 
@@ -453,10 +470,10 @@ export function useCanvasState(onChange: () => void = () => {}) {
         // A resize is a commit point: undoing across it page by page would
         // leave that page's artwork sized for the frame it no longer has.
         historyMapRef.current.set(pageId, {
-          entries: [JSON.stringify(canvas.toJSON())],
+          entries: [{json: JSON.stringify(canvas.toJSON())}],
           index: 0,
         });
-        updateUndoRedoState(pageId);
+        updateUndoRedoState();
       }
       onChangeRef.current();
     },
@@ -478,8 +495,8 @@ export function useCanvasState(onChange: () => void = () => {}) {
         fitAll(canvas);
         canvas.requestRenderAll();
         isRestoringRef.current.delete(pageId);
-        historyMapRef.current.set(pageId, { entries: [json], index: 0 });
-        updateUndoRedoState(pageId);
+        historyMapRef.current.set(pageId, { entries: [{json}], index: 0 });
+        updateUndoRedoState();
         onChangeRef.current();
       });
     }
@@ -594,12 +611,12 @@ export function useCanvasState(onChange: () => void = () => {}) {
     if (moves.length) {
       canvas.requestRenderAll();
       // Undo snapshots predating a remote move would undo another editor's work.
-      historyMapRef.current.set(pageId, {entries: [JSON.stringify(canvas.toJSON())], index: 0});
+      historyMapRef.current.set(pageId, {entries: [{json: JSON.stringify(canvas.toJSON())}], index: 0});
       if (resizeSnapshotRef.current?.pages.has(pageId)) {
         resizeSnapshotRef.current = null;
         setCanUndoResize(false);
       }
-      updateUndoRedoState(pageId);
+      updateUndoRedoState();
     }
     return true;
   }, [updateUndoRedoState]);
@@ -620,10 +637,10 @@ export function useCanvasState(onChange: () => void = () => {}) {
           canvas.requestRenderAll();
           isRestoringRef.current.delete(pageId);
           historyMapRef.current.set(pageId, {
-            entries: [JSON.stringify(canvas.toJSON())],
+            entries: [{json: JSON.stringify(canvas.toJSON())}],
             index: 0,
           });
-          updateUndoRedoState(pageId);
+          updateUndoRedoState();
           onChangeRef.current();
         });
       }
