@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@clawnify/app':
-        specifier: ^0.4.12
-        version: 0.4.12(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)
+        specifier: ^0.4.13
+        version: 0.4.13(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)
       '@clawnify/db':
         specifier: ^0.4.3
         version: 0.4.3
@@ -204,8 +204,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@clawnify/app@0.4.12':
-    resolution: {integrity: sha512-RsMvsBi1bQOkrhYzTZ/xTwjioXza/oGZzYP3iKcHSLoycB9JuiRBQTgRI4mge7XxH8LoJQtyiD7+zqAzCUd4hA==}
+  '@clawnify/app@0.4.13':
+    resolution: {integrity: sha512-SA5W4J1O0iBfInFzBFOGVDMrFzKpLWGDJofXvS0/PIPujBDdeCLRzqhkxTAuVLWo77FpKxxq1PJ/Y8zUnJta3Q==}
     peerDependencies:
       '@hono/zod-openapi': '>=0.18 <1'
       '@phosphor-icons/react': '>=2'
@@ -2677,7 +2677,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@clawnify/app@0.4.12(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)':
+  '@clawnify/app@0.4.13(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(hono@4.12.10)(react@19.3.0)':
     dependencies:
       '@clawnify/db': 0.4.3
       '@clawnify/routes': 0.3.0(@hono/zod-openapi@0.18.4(hono@4.12.10)(zod@3.25.76))(hono@4.12.10)

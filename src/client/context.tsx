@@ -1,3 +1,4 @@
+import type { DragPreviews } from "./lib/drag-previews";
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type { Design, Template, Page, BrandKit, CustomFont } from "./types";
@@ -34,6 +35,7 @@ export interface EditorContextValue {
   importFont: (file: File) => Promise<string>;
 
   // Canvas (multi-canvas)
+  dragPreviews: DragPreviews;
   registerCanvas: (pageId: string, canvas: fabric.Canvas) => () => void;
   unregisterCanvas: (pageId: string) => void;
   setActiveCanvas: (pageId: string) => void;
@@ -90,8 +92,6 @@ export interface EditorContextValue {
   setDesignTemplate: (id: string, on: boolean) => Promise<void>;
   saving: boolean;
   saveStatus: "saved" | "pending" | "saving" | "error";
-  autoSave: boolean;
-  setAutoSave: (enabled: boolean) => void;
 
   pageView: (id: string) => {key: number; json: string} | undefined;
   canvasReady: (page: Page, rendered: string, draft: string) => void;

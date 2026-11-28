@@ -6,19 +6,24 @@ import { useRouter } from "./hooks/use-router";
 import { Editor } from "./components/editor";
 import { Home } from "./components/home";
 import { useFonts } from "./fonts";
-import { AppNav, reportLocation, useDocumentCollaboration, useHostChanges } from "@clawnify/app/client";
-import { useEffect, useRef } from "preact/hooks";
+import { AppNav, reportLocation, previewDocument, useDocumentCollaboration, useHostChanges } from "@clawnify/app/client";
+import { DragPreviews } from "./lib/drag-previews";
+import { useEffect, useMemo, useRef } from "preact/hooks";
 
 export function App() {
   const { path, navigate, designId } = useRouter();
-  const saveSchedulerRef = useRef<() => void>(() => {});
-  const canvasState = useCanvasState(() => saveSchedulerRef.current());
+  const saveSchedulerRef = useRef<(immediate?: boolean) => void>(() => {});
+  const dragPreviews = useMemo(() => new DragPreviews(value => {
+    if (designId) previewDocument(designId, value);
+  }), [designId]);
+  useEffect(() => () => dragPreviews.dispose(), [dragPreviews]);
+  const canvasState = useCanvasState(immediate => saveSchedulerRef.current(immediate));
   const designState = useDesigns(canvasState.getCanvasJSONForPage, canvasState.getCanvasSize, canvasState.applyRemoteMove);
   saveSchedulerRef.current = designState.scheduleSave;
   const layer = (canvasState.selectedObject as {layerId?: string} | null)?.layerId;
   const selection = canvasState.activeCanvasId && layer ? canvasState.activeCanvasId + ":" + layer : null;
   const openDocument = designId && designState.loadedDesignId === designId ? designId : null;
-  const editors = useDocumentCollaboration(openDocument, selection, designState.refresh);
+  const editors = useDocumentCollaboration(openDocument, selection, designState.refresh, dragPreviews.receive);
   useHostChanges(() => { if (openDocument) designState.refresh(); });
   useEffect(() => {
     if (!openDocument) return;
@@ -121,6 +126,7 @@ export function App() {
   // Editor view
   const contextValue = {
     editors,
+    dragPreviews,
     ...canvasState,
     ...designState,
     ...brandState,

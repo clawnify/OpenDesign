@@ -3,7 +3,6 @@ import type { Design, DesignWithPages, Template, Page } from "../types";
 import { newPageCanvas } from "../../shared/page-background";
 import type { Dimensions } from "../resize";
 import { useCollaborativePages } from "./use-collaborative-pages";
-import { embedded } from "@clawnify/app/client";
 import { api } from "../api";
 
 export function useDesigns(
@@ -25,14 +24,6 @@ export function useDesigns(
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "pending" | "saving" | "error">("saved");
-  const [autoSave, setAutoSaveState] = useState(() => {
-    try {
-      const saved = localStorage.getItem("opendesign:auto-save");
-      return saved === null ? embedded : saved === "true";
-    } catch {
-      return embedded; // storage blocked (private window, sandboxed iframe)
-    }
-  });
   const activeIdRef = useRef<string | null>(null);
   const activePageIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,7 +79,7 @@ export function useDesigns(
         setDesigns(prev => prev.map(d => d.id === updated.id ? updated : d));
         if (activeIdRef.current === designId) {frameRef.current = {width,height}; setActiveDesign(updated);}
       }
-      if (activeIdRef.current === designId) {
+      if (activeIdRef.current === designId && !saveTimerRef.current) {
         setSaveStatus("saved");
       }
     } catch (e) {
@@ -295,28 +286,15 @@ export function useDesigns(
   const activePage = pages.find((p) => p.id === activePageId) ?? null;
 
   // Auto-save debounced
-  const scheduleSave = useCallback(() => {
-    if (!autoSave || !activeIdRef.current) return;
+  const scheduleSave = useCallback((immediate = false) => {
+    if (!activeIdRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus("pending");
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       void saveDesign();
-    }, 800);
-  }, [autoSave, saveDesign]);
-
-  const setAutoSave = useCallback((enabled: boolean) => {
-    try {
-      localStorage.setItem("opendesign:auto-save", String(enabled));
-    } catch {
-      // storage blocked: the choice lasts for this session only
-    }
-    setAutoSaveState(enabled);
-    if (!enabled && saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-  }, []);
+    }, immediate ? 0 : 800);
+  }, [saveDesign]);
 
   const refresh = useCallback(() => {
     const id = activeIdRef.current;
@@ -352,7 +330,7 @@ export function useDesigns(
     }
     collaboration.receive(conflict.page, choice);
     updatePages(prev => prev.map(p => p.id === conflict.page.id ? conflict.page : p));
-    setSaveStatus("pending");
+    scheduleSave();
   }
   return {
     pageView: collaboration.view,
@@ -369,8 +347,6 @@ export function useDesigns(
     loading,
     saving,
     saveStatus,
-    autoSave,
-    setAutoSave,
     createDesign,
     createFromTemplate,
     loadDesign,

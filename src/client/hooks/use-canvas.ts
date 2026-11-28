@@ -45,7 +45,7 @@ function historyStep(histories: Map<string, CanvasHistory>, id: string, directio
   return paired ? transfer : [];
 }
 
-export function useCanvasState(onChange: () => void = () => {}) {
+export function useCanvasState(onChange: (immediate?: boolean) => void = () => {}) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const canvasMapRef = useRef<Map<string, fabric.Canvas>>(new Map());
@@ -86,7 +86,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
     setCanRedo(historyStep(historyMapRef.current, pageId, 1).length > 0);
   }, []);
 
-  const saveHistory = useCallback((pageId: string, transfer?: readonly [string, string]) => {
+  const saveHistory = useCallback((pageId: string, transfer?: readonly [string, string], immediate = false) => {
     if (isRestoringRef.current.has(pageId)) return;
     const canvas = canvasMapRef.current.get(pageId);
     if (!canvas) return;
@@ -111,7 +111,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       hist.index = hist.entries.length - 1;
     }
     updateUndoRedoState();
-    onChangeRef.current();
+    onChangeRef.current(immediate);
   }, [updateUndoRedoState]);
 
   const unregisterCanvas = useCallback((pageId: string) => {
@@ -172,7 +172,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
     canvas.on("object:modified", ({ target, action }) => {
       const destination = action === "drag" && pageUnderObject(canvas, target, canvasMapRef.current);
       if (!destination || isRestoringRef.current.has(destination.id)) {
-        saveHistory(pageId);
+        saveHistory(pageId, undefined, action === "drag");
         return;
       }
       const pair = [pageId, destination.id] as const;
@@ -184,7 +184,7 @@ export function useCanvasState(onChange: () => void = () => {}) {
       } finally {
         pair.forEach(id => isRestoringRef.current.delete(id));
       }
-      for (const id of pair) saveHistory(id, pair);
+      for (const id of pair) saveHistory(id, pair, true);
     });
     canvas.on("object:removed", () => saveHistory(pageId));
     canvas.on("text:changed", (e) => {
