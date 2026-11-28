@@ -101,6 +101,21 @@
       "caption": "Landscape posts at LinkedIn's own size, 1200 by 627.",
       "alt": "A landscape open-day announcement open in the editor.",
       "path": "/design/a1b2c3d4-0001-4000-8000-000000000001"
+    },
+    {
+      "name": "pages-video",
+      "caption": "Open a carousel's pages.",
+      "alt": "The editor with a two-page carousel open; the pages strip slides up and shows both pages.",
+      "video": true,
+      "path": "/design/a1b2c3d4-0002-4000-8000-000000000002",
+      "steps": [
+        {
+          "click": {
+            "text": "Pages (2)"
+          },
+          "seconds": 2
+        }
+      ]
     }
   ]
 }
