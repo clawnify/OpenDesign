@@ -40,6 +40,8 @@ Unlike Canva or Adobe Express, this runs entirely on your own infrastructure. No
 
 ## Carousels
 
+[Watch OpenDesign open the pages of a carousel (MP4)](https://api.clawnify.com/demos/design/shots/pages-video.mp4)
+
 A swipeable carousel on LinkedIn is a **document post**. LinkedIn's own help pages
 document the format (PDF, DOC/DOCX or PPT/PPTX, up to 300 pages and 100 MB), and the
 short-lived native multi-image carousel it shipped in 2022 was removed in June 2023,
