@@ -26,7 +26,7 @@ export function PageCanvas({revision, ...props}: PageCanvasProps & {revision: nu
 }
 
 function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: PageCanvasProps & {saved: {current: SavedSelection}}) {
-  const { registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId } = useEditor();
+  const { dragPreviews, registerCanvas, unregisterCanvas, canvasReady, pageView, editors, activePageId } = useEditor();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const [markers, setMarkers] = useState<{id: string; name: string; left: number; top: number; width: number; height: number}[]>([]);
@@ -161,9 +161,11 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
     // Load page content
     const initial = pageView(page.id)?.json ?? page.canvas_json;
     let disposed = false;
+    let stopDrag: (() => void) | undefined;
     let stopPagePreview: (() => void) | undefined;
     const ready = () => {
       stopPagePreview = registerCanvas(page.id, c);
+      stopDrag = dragPreviews.attach(page.id, c);
       canvasReady(page, JSON.stringify(c.toJSON()), initial || "{}");
     };
     if (initial && initial !== "{}") {
@@ -204,6 +206,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
 
     return () => {
       stopWatchingDrag?.();
+      stopDrag?.();
       stopPagePreview?.();
       disposed = true;
       const object = c.getActiveObject();
@@ -226,7 +229,7 @@ function FabricPage({page, width, height, scrollAreaRef, onActivate, saved}: Pag
     const draw = () => {
       const next = selected.flatMap(editor => {
         const layer = canvas.getObjects().find(object => page.id + ":" + object.get("layerId") === editor.selection);
-        return layer ? [{id: editor.id, name: editor.name, ...layer.getBoundingRect()}] : [];
+        return layer ? [{id: editor.id, name: editor.name, ...dragPreviews.bounds(page.id, layer)}] : [];
       });
       setMarkers(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };

@@ -45,8 +45,6 @@ export function Toolbar() {
     saveDesign,
     saving,
     saveStatus,
-    autoSave,
-    setAutoSave,
     activeDesign,
     renameDesign,
     setDesignTemplate,
@@ -149,7 +147,7 @@ export function Toolbar() {
               </span>
             )}
             <span role="status" class={`h-4 w-[15ch] shrink-0 whitespace-nowrap text-fine leading-4 ${saveStatus === "error" ? "text-danger" : "text-muted"}`}>
-              {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : autoSave ? "All changes saved" : ""}
+              {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : "All changes saved"}
             </span>
           </div>
         )}
@@ -350,20 +348,6 @@ export function Toolbar() {
             </>
           )}
         </div>
-        {activeDesign && (
-          <label class="inline-flex items-center gap-1.5 text-label text-muted whitespace-nowrap cursor-pointer" title="Save changes automatically after a short pause">
-            <input
-              type="checkbox"
-              class="accent-foreground"
-              checked={autoSave}
-              onChange={(e) => {
-                setAutoSave(e.currentTarget.checked);
-                if (e.currentTarget.checked) void saveDesign();
-              }}
-            />
-            Auto-save
-          </label>
-        )}
         {activeDesign && (
           <label class="inline-flex items-center gap-1.5 text-label text-muted whitespace-nowrap cursor-pointer" title="Offer this design under Start from a template. Starting from it copies every page.">
             <input
