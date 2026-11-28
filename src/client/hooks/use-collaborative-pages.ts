@@ -16,10 +16,15 @@ export function useCollaborativePages(getCanvas: (id: string) => string,
   const views = useRef(new Map<string, View>());
   const [version, setVersion] = useState(0);
   const [conflict, setConflict] = useState<Conflict | null>(null);
-  const pending = useRef<Conflict | null>(null);
-  function showConflict(value: Conflict | null) {
-    pending.current = value;
-    setConflict(value);
+  const pending = useRef(new Map<string, Conflict>());
+  function showConflict(value: Conflict) {
+    pending.current.set(value.page.id, value);
+    setConflict(pending.current.values().next().value ?? null);
+  }
+  function clearConflict(id: string) {
+    const cleared = pending.current.delete(id);
+    if (cleared) setConflict(pending.current.values().next().value ?? null);
+    return cleared;
   }
   const ready = useCallback((page: Page, rendered: string, draft: string) => {
     bases.current.set(page.id, {rendered, draft, saved: page.canvas_json});
@@ -45,26 +50,29 @@ export function useCollaborativePages(getCanvas: (id: string) => string,
   }
   function receive(page: Page, resolve?: "mine" | "theirs") {
     const local = draft(page.id);
-    if (!local || local.base.saved === page.canvas_json) return;
+    if (!local) return;
+    if (local.base.saved === page.canvas_json) return clearConflict(page.id);
     const result = mergeCanvas(local.base.saved, local.json, page.canvas_json, resolve);
     if (result.conflicts.length && !resolve) {
-      if (!pending.current || pending.current.page.id === page.id) showConflict({page, layers: result.conflicts, local: local.json});
+      showConflict({page, layers: result.conflicts, local: local.json});
       return;
     }
     stage(page, result.json, local.json);
-    if (pending.current?.page.id === page.id) showConflict(null);
+    return clearConflict(page.id);
   }
   async function save(page: Page) {
-    if (pending.current?.page.id === page.id) throw Error("Choose which layer changes to keep.");
+    if (pending.current.has(page.id)) return null;
     const local = draft(page.id);
     if (!local || local.json === local.base.saved) return page;
     let updated;
     try {
       updated = await api<Page>("PUT", "/api/pages/" + page.id, {base_canvas_json: local.base.saved, canvas_json: local.json});
     } catch (error) {
-      if (error instanceof ApiError && error.status === 409 && error.data.current)
+      if (error instanceof ApiError && error.status === 409 && error.data.current && error.data.conflicts.length) {
         showConflict({page: error.data.current, layers: error.data.conflicts, local: local.json});
-      if (error instanceof ApiError && error.status === 404) removed(page);
+        return null;
+      }
+      if (error instanceof ApiError && error.status === 404 && removed(page)) return null;
       throw error;
     }
     documentSaved(page.design_id);
@@ -84,15 +92,18 @@ export function useCollaborativePages(getCanvas: (id: string) => string,
   }
   function removed(page: Page) {
     const local = draft(page.id);
-    if (!local || local.json === local.base.saved) return false;
-    if (!pending.current || pending.current.page.id === page.id)
-      showConflict({page, layers: [], local: local.json, removed: true});
+    if (!local || local.json === local.base.saved) {
+      clearConflict(page.id);
+      return false;
+    }
+    showConflict({page, layers: [], local: local.json, removed: true});
     return true;
   }
   const reset = useCallback(() => {
     bases.current.clear();
     views.current.clear();
-    showConflict(null);
+    pending.current.clear();
+    setConflict(null);
   }, []);
-  return {ready, save, receive, conflict, reset, removed, draft, showConflict, view: (id: string) => views.current.get(id), version};
+  return {ready, save, receive, conflict, reset, removed, draft, clearConflict, view: (id: string) => views.current.get(id), version};
 }

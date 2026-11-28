@@ -91,7 +91,7 @@ export interface EditorContextValue {
   renameDesign: (id: string, name: string) => Promise<void>;
   setDesignTemplate: (id: string, on: boolean) => Promise<void>;
   saving: boolean;
-  saveStatus: "saved" | "pending" | "saving" | "error";
+  saveStatus: "saved" | "pending" | "saving" | "conflict" | "error";
 
   pageView: (id: string) => {key: number; json: string} | undefined;
   canvasReady: (page: Page, rendered: string, draft: string) => void;
