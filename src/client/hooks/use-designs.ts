@@ -70,7 +70,7 @@ export function useDesigns(
       for (const page of pagesRef.current.filter(item => item.design_id === designId)) {
         if (!pagesRef.current.some((current) => current.id === page.id)) continue;
         const updatedPage = await collabRef.current.save(page);
-        updatePages(prev => prev.map(p => p.id === updatedPage.id ? updatedPage : p));
+        if (updatedPage) updatePages(prev => prev.map(p => p.id === updatedPage.id ? updatedPage : p));
       }
       // The frame is part of the design: without it a resized design reopens
       // at its old dimensions with artwork scaled for the new ones.
@@ -304,13 +304,17 @@ export function useDesigns(
       if (activeIdRef.current !== id || session !== designLoadRef.current) return;
       const next = await api<DesignWithPages>("GET", "/api/designs/" + id);
       if (activeIdRef.current !== id || session !== designLoadRef.current) return;
-      for (const page of next.pages) collabRef.current.receive(page);
+      let resumed = false;
+      for (const page of next.pages) {
+        if (collabRef.current.receive(page)) resumed = true;
+      }
       const ids = new Set(next.pages.map(page => page.id));
       const recoverable = pagesRef.current.filter(page => !ids.has(page.id) && collabRef.current.removed(page));
       updatePages([...next.pages, ...recoverable]);
+      if (resumed) scheduleSave();
     };
     saveQueueRef.current = saveQueueRef.current.then(task).catch(error => console.error("Failed to refresh design", error));
-  }, [updatePages]);
+  }, [scheduleSave, updatePages]);
 
   async function resolveConflict(choice: "mine" | "theirs") {
     const conflict = collaboration.conflict;
@@ -323,7 +327,7 @@ export function useDesigns(
         }) : null;
         if (activeIdRef.current !== old.design_id) return;
         updatePages(prev => [...prev.filter(p => p.id !== old.id), ...(recovered ? [recovered] : [])]);
-        collaboration.showConflict(null);
+        collaboration.clearConflict(old.id);
         setSaveStatus("saved");
       } catch { setSaveStatus("error"); }
       return;
@@ -346,7 +350,7 @@ export function useDesigns(
     activeIdRef,
     loading,
     saving,
-    saveStatus,
+    saveStatus: collaboration.conflict && saveStatus !== "error" ? "conflict" as const : saveStatus,
     createDesign,
     createFromTemplate,
     loadDesign,

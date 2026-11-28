@@ -147,7 +147,7 @@ export function Toolbar() {
               </span>
             )}
             <span role="status" class={`h-4 w-[15ch] shrink-0 whitespace-nowrap text-fine leading-4 ${saveStatus === "error" ? "text-danger" : "text-muted"}`}>
-              {saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : "All changes saved"}
+              {saveStatus === "conflict" ? "Review edits" : saveStatus === "pending" ? "Unsaved changes" : saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Save failed" : "All changes saved"}
             </span>
           </div>
         )}
